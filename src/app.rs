@@ -1,4 +1,4 @@
-use crate::json_types::{self, Category, Data, Task};
+use crate::json_types::{self, Category, Data, Milestone, Task};
 use crate::theme::Theme;
 use crate::timer::Timer;
 
@@ -133,6 +133,21 @@ impl App{
             self.edit_exp = String::new();
 
             category.add_task(Task::init(name, exp))?;
+            return Ok(());
+        }
+        Err(())
+    }
+    pub fn save_milestone(&mut self) -> Result<(), ()>{
+        if let Some(category) = self.data.get_category_mut(self.cur_category as usize){
+            let name = self.edit_name.clone();
+            if self.edit_exp.parse::<u32>().is_err(){
+                return Err(());
+            }
+            let exp: u32 = self.edit_exp.parse().unwrap();
+            self.edit_name = String::new();
+            self.edit_exp = String::new();
+
+            category.add_milestone(Milestone::init(name, exp))?;
             return Ok(());
         }
         Err(())

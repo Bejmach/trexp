@@ -79,7 +79,7 @@ impl Category{
         self.name = name;
     }
     pub fn move_task(&mut self, id: usize, by: i32) -> Result<(), ()>{
-        if (id as i32 + by < 0) && (id as i32 + by >= self.tasks.len() as i32) {
+        if (id as i32 + by < 0) || (id as i32 + by >= self.tasks.len() as i32) {
             return Err(());
         }
         self.tasks.swap(id, (id as i32 + by) as usize);
@@ -107,7 +107,7 @@ impl Category{
     }
 
     pub fn move_milestone(&mut self, id: usize, by: i32) -> Result<(), ()>{
-        if (id as i32 + by < 0) && (id as i32 + by >= self.milestones.len() as i32) {
+        if (id as i32 + by < 0) || (id as i32 + by >= self.milestones.len() as i32) {
             return Err(());
         }
         self.milestones.swap(id, (id as i32 + by) as usize);

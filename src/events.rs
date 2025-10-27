@@ -29,6 +29,7 @@ fn handle_key_event(app: &mut App, key_event: KeyEvent){
             AppState::Tasks => tasks_key_events(app, key_event),
             AppState::CreateTask => create_task_key_events(app, key_event),
             AppState::Milestones => milestones_key_events(app, key_event),
+            AppState::CreateMilestone => create_milestone_key_events(app, key_event),
             AppState::Timers => timers_key_events(app, key_event),
             _ => {}
         }
@@ -180,7 +181,78 @@ fn create_task_key_events(app: &mut App, key_event: KeyEvent){
 fn milestones_key_events(app: &mut App, key_event: KeyEvent){
     match key_event.code{
         KeyCode::Char('q') => app.state = AppState::Main,
+        KeyCode::Char('n') => {
+            app.state = AppState::CreateMilestone;
+            app.cur_edit = AppEdit::Name;
+        },
+        KeyCode::Up => app.id_up(),
+        KeyCode::Down => app.id_down(),
+        KeyCode::PageUp => {
+            if let Some(category) = app.data.get_category_mut(app.cur_category as usize){
+                if category.move_milestone(app.cur_milestone as usize, -1).is_ok(){
+                    app.cur_milestone -=1;
+                }
+            }
+        },
+        KeyCode::PageDown => {
+            if let Some(category) = app.data.get_category_mut(app.cur_category as usize){
+                if category.move_milestone(app.cur_milestone as usize, 1).is_ok(){
+                    app.cur_milestone +=1;
+                }
+            }
+        }
         _ => {},
+    }
+}
+
+fn create_milestone_key_events(app: &mut App, key_event: KeyEvent){
+    match key_event.code {
+        KeyCode::Enter => {
+            if app.save_milestone().is_err(){
+                app.error_message = "Error while creating milestone".to_string();
+            }
+            app.set_state(AppState::Milestones);
+            app.edit_name = String::new();
+            app.edit_exp = String::new();
+            app.cur_edit = AppEdit::None;
+        },
+        KeyCode::Esc => {
+            app.set_state(AppState::Milestones);
+            app.edit_name = String::new();
+            app.edit_exp = String::new();
+        },
+        KeyCode::Backspace => {
+            if app.cur_edit == AppEdit::Name{
+                app.edit_name.pop();
+            }
+            else if app.cur_edit == AppEdit::Exp{
+                app.edit_exp.pop();
+            }
+        }
+        KeyCode::Right => {
+            app.cur_edit = AppEdit::Exp;
+        }
+        KeyCode::Left => {
+            app.cur_edit = AppEdit::Name;
+        }
+        KeyCode::Char(value) => {
+            match value{
+                '0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9' => {
+                    if app.cur_edit == AppEdit::Exp{
+                        app.edit_exp.push(value);
+                    }
+                    else if app.cur_edit == AppEdit::Name{
+                        app.edit_name.push(value);
+                    }
+                }
+                _ => {
+                    if app.cur_edit == AppEdit::Name{
+                        app.edit_name.push(value);
+                    }
+                }
+            }
+        },
+        _ => {}
     }
 }
 

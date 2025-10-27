@@ -61,6 +61,18 @@ pub fn ui(frame: &mut Frame, app: &mut App){
                 ("Esc", "Cancel"),
                 ("left/right", "Change edit box"),
             ],
+            AppState::Milestones => vec![
+                ("q", "Quit"),
+                ("Enter", "Select"),
+                ("up/down", "Move"),
+                ("pgUp/pgDown", "Move milestone"),
+                ("n", "New"),
+            ],
+            AppState::CreateMilestone => vec![
+                ("Enter", "Accept"),
+                ("Esc", "Cancel"),
+                ("left/right", "Change edit box"),
+            ],
             _ => vec![
                 ("q", "Quit"),
             ],
@@ -80,6 +92,9 @@ pub fn ui(frame: &mut Frame, app: &mut App){
         },
         AppState::CreateTask => {
             render_new_task(app, frame, 60, 25, task_chunks[0]);
+        },
+        AppState::CreateMilestone => {
+            render_new_milestone(app, frame, 60, 25, task_chunks[1]);
         }
         _ => {}
     }
@@ -179,6 +194,32 @@ fn render_tasks(app: &mut App, frame: &mut Frame, area: Rect){
 }
 
 fn render_milestones(app: &mut App, frame: &mut Frame, area: Rect){
+    let mut items: Vec<ListItem> = Vec::new();
+
+    if let Some(category) = app.data.get_category(app.cur_category as usize){
+        for (i, milestone) in category.milestones.iter().enumerate(){
+            let milestone_text = format!("{} [+{} XP]", milestone.name, milestone.exp_reward);
+
+            let style = if i == app.cur_milestone as usize {
+                if app.state == AppState::Milestones{
+                    app.theme.selection
+                }
+                else{
+                    app.theme.faded_selection
+                }
+            }else{
+                app.theme.passive
+            };
+
+            items.push(ListItem::new(Line::from(Span::styled(
+                milestone_text,
+                style
+            ))));
+        }
+    }
+
+    let milestone_list = List::new(items);
+
     let style = if app.state == AppState::Milestones{
         app.theme.active
     }else if app.get_cur_component() == Some(&AppComponent::Milestones){
@@ -193,7 +234,7 @@ fn render_milestones(app: &mut App, frame: &mut Frame, area: Rect){
         .padding(Padding::new(2, 4, 1, 1))
         .style(style);
 
-    frame.render_widget(block, area);
+    frame.render_widget(milestone_list.block(block), area);
 }
 
 fn render_timers(app: &mut App, frame: &mut Frame, area: Rect){
@@ -231,6 +272,60 @@ fn render_new_category(app: &mut App, frame: &mut Frame, width: u16, height: u16
 fn render_new_task(app: &mut App, frame: &mut Frame, width: u16, height: u16, area: Rect){
     let block = Block::bordered()
         .title_top(Line::from("New Task".bold()).centered())
+        .border_set(border::ROUNDED)
+        .padding(Padding::new(3, 3, 1, 1))
+        .style(app.theme.floating);
+
+    let area = centered_rect(width, height, area);
+    frame.render_widget(block, area);
+
+    let task_layout = Layout::default()
+        .direction(Direction::Horizontal)
+        .margin(1)
+        .constraints([
+            Constraint::Percentage(50),
+            Constraint::Percentage(50),
+        ])
+        .split(area);
+
+    let name_style = if app.cur_edit == AppEdit::Name{
+        app.theme.active
+    }else{
+        app.theme.floating
+    };
+    let exp_style = if app.cur_edit == AppEdit::Exp{
+        app.theme.active
+    }else{
+        app.theme.floating
+    };
+
+    let name_block = Block::bordered()
+        .title(Line::from("Name").centered())
+        .border_set(border::PLAIN)
+        .style(name_style);
+
+    let exp_block = Block::bordered()
+        .title(Line::from("Revard").centered())
+        .border_set(border::PLAIN)
+        .style(exp_style);
+    
+    let name_paragraph = Paragraph::new(app.edit_name.clone())
+        .centered()
+        .block(name_block)
+        .style(name_style);
+
+    let exp_paragraph = Paragraph::new(app.edit_exp.clone())
+        .centered()
+        .block(exp_block)
+        .style(exp_style);
+
+    frame.render_widget(name_paragraph, task_layout[0]);
+    frame.render_widget(exp_paragraph, task_layout[1]);
+}
+
+fn render_new_milestone(app: &mut App, frame: &mut Frame, width: u16, height: u16, area: Rect){
+    let block = Block::bordered()
+        .title_top(Line::from("New Milestone".bold()).centered())
         .border_set(border::ROUNDED)
         .padding(Padding::new(3, 3, 1, 1))
         .style(app.theme.floating);
