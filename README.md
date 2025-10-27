@@ -2,7 +2,7 @@
 > terminal rust exp system
 
 ## Goal
-Did you ever needed to do something, but you just couldn't motivate yourself to do that? Me too. Thats why Im making that program. The program itself won't give you a motivation boost, but it can help you find that motivation in yourself, but changing boring tasks into game like progression system. Create category, make some tasks and milestoned, run timer while working on said tasks, and earn levels for that.
+Did you ever needed to do something, but you just couldn't motivate yourself to do that? Me too. Thats why Im making that program. The program itself won't give you a motivation boost, but it can help you find that motivation in yourself by changing boring tasks into game like progression system. Create category, make some tasks and milestoned, run timer while working on said tasks, and earn levels for that.
 
 ## Usage
 Just run executable in terminal/console and read shortcuts at the bottom of the screen
