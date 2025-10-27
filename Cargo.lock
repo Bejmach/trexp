@@ -132,15 +132,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "exp_system"
-version = "0.1.0"
-dependencies = [
- "ratatui",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -496,6 +487,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "trexp"
+version = "0.1.0"
+dependencies = [
+ "ratatui",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
