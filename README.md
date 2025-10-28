@@ -10,4 +10,42 @@ Just run executable in terminal/console and read shortcuts at the bottom of the 
 ## Configuration
 For now, there is no possible configuration of the program, but the goal is to allow for custom widget layout, cursom themes, and custom controlls
 
+## How it looks
+> I cant show styles in readme. You need to trust me with that
+```
+
+ ┌ Categories ────────────────────────────────────────────┐┌ Tasks ─────────────────────────────────────────────────┐
+ │                                                        ││                                                        │
+ │  test           |             |            0/20 : 1    ││  task [+5 XP]                                          │
+ │                                                        ││                                                        │
+ │                                                        ││                                                        │
+ │                                                        ││                                                        │
+ │                                                        ││                                                        │
+ │                                                        ││                                                        │
+ │                                                        ││                                                        │
+ │                                                        │└────────────────────────────────────────────────────────┘
+ │                                                        │┌ Milestones ────────────────────────────────────────────┐
+ │                                                        ││                                                        │
+ │                                                        ││  milestone [+20 XP]                                    │
+ │                                                        ││                                                        │
+ │                                                        ││                                                        │
+ │                                                        ││                                                        │
+ │                                                        ││                                                        │
+ │                                                        ││                                                        │
+ └────────────────────────────────────────────────────────┘└────────────────────────────────────────────────────────┘
+ ┌ Timers ──────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+ │                                                                                                                  │
+ │  test           |=====================                                                  |                 : 0    │
+ │                                                                                                                  │
+ │                                                                                                                  │
+ │                                                                                                                  │
+ │                                                                                                                  │
+ │                                                                                                                  │
+ │                                                                                                                  │
+ │                                                                                                                  │
+ └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+ q Quit   s Save   Enter Select   Arrows Move
+
+```
+
 > Thank you and have fun!

@@ -1,6 +1,10 @@
-use std::io;
+use std::{io, time::{SystemTime, UNIX_EPOCH}};
 
 use serde::{Deserialize, Serialize};
+
+pub fn exp_for_lvl(lvl: u32, power: f32) -> u32{
+    (20.0 * (lvl as f32).powf(power)) as u32
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct Data{
@@ -58,6 +62,7 @@ impl Data{
 
 #[derive(Serialize, Deserialize)]
 pub struct Category{
+    unique_id: u64,
     pub name: String,
     pub exp: u32,
     pub exp_to_next_lvl: u32,
@@ -68,24 +73,39 @@ pub struct Category{
 
 impl Category{
     pub fn new() -> Self{
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH).expect("");
+
+        let timestamp = now.as_secs();
+
         Self {
+            unique_id: timestamp,
             name: String::new(),
             exp: 0,
-            exp_to_next_lvl: 1,
-            lvl: 0,
+            exp_to_next_lvl: 20,
+            lvl: 1,
             tasks: Vec::new(),
             milestones: Vec::new(),
         }
     }
     pub fn init(name: &str) -> Self{
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH).expect("");
+
+        let timestamp = now.as_secs();
+
         Self {
+            unique_id: timestamp,
             name: name.to_string(),
             exp: 0,
-            exp_to_next_lvl: 1,
-            lvl: 0,
+            exp_to_next_lvl: 20,
+            lvl: 1,
             tasks: Vec::new(),
             milestones: Vec::new(),
         }
+    }
+    pub fn get_uid(&self) -> u64{
+        self.unique_id
     }
     pub fn set_name(&mut self, name: String){
         self.name = name;
@@ -144,6 +164,19 @@ impl Category{
 
     pub fn get_milestone(&self, id: usize) -> Option<&Milestone>{
         self.milestones.get(id)
+    }
+
+    pub fn increase_exp(&mut self, exp: u32, power: f32){
+        self.exp += exp;
+        while self.exp >= self.exp_to_next_lvl{
+            self.lvl_up(power);
+        }
+    }
+
+    pub fn lvl_up(&mut self, power: f32){
+        self.exp -= self.exp_to_next_lvl;
+        self.lvl += 1;
+        self.exp_to_next_lvl = exp_for_lvl(self.lvl, power);
     }
 }
 

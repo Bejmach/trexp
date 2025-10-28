@@ -1,6 +1,6 @@
 use ratatui::{layout::{Constraint, Direction, Layout, Rect}, style::{Color, Style, Stylize}, symbols::{border, line}, text::{Line, Span}, widgets::{Block, List, ListItem, Padding, Paragraph}, Frame};
 
-use crate::app::{App, AppComponent, AppEdit, AppState};
+use crate::{app::{App, AppComponent, AppEdit, AppState}, theme::GaugeState};
 
 pub fn ui(frame: &mut Frame, app: &mut App){
     let chunks = Layout::default()
@@ -35,6 +35,7 @@ pub fn ui(frame: &mut Frame, app: &mut App){
         match app.state{
             AppState::Main => vec![
                 ("q", "Quit"),
+                ("s", "Save"),
                 ("Enter", "Select"),
                 ("Arrows", "Move"),
             ],
@@ -46,6 +47,7 @@ pub fn ui(frame: &mut Frame, app: &mut App){
                 ("n", "New"),
                 ("d", "Delete"),
                 ("e", "Edit"),
+                ("t", "Toggle timer"),
             ],
             AppState::CreateCategory | AppState::EditCategory => vec![
                 ("Enter", "Accept"),
@@ -100,31 +102,47 @@ pub fn ui(frame: &mut Frame, app: &mut App){
     }
 }
 
+fn build_gauge<'a>(app: &App, label_left: String, label_right: String, ratio: f32, width: u16, state: GaugeState) -> Line<'a>{
+    let bar_width = width - app.theme.gauge_style.margin_left - app.theme.gauge_style.margin_right - 4;
+    let filled_chars = (ratio * bar_width as f32) as usize;
+    let empty_chars = bar_width as usize - filled_chars;
+
+    let style = match state {
+        GaugeState::Focus => app.theme.gauge_style.focus,
+        GaugeState::FadedFocus => app.theme.gauge_style.faded_focus,
+        _ => app.theme.gauge_style.passive,
+    };
+
+    let span_vec = vec![
+        Span::styled(format!("{:<1$}", label_left, app.theme.gauge_style.margin_left as usize), style),
+        Span::styled(format!("{}", app.theme.gauge_style.border_char), style),
+        Span::styled(app.theme.gauge_style.fill_char.to_string().repeat(filled_chars), style),
+        Span::styled(app.theme.gauge_style.empty_char.to_string().repeat(empty_chars), style),
+        Span::styled(format!("{}", app.theme.gauge_style.border_char), style),
+        Span::styled(format!("{:>1$}", label_right, app.theme.gauge_style.margin_right as usize), style),
+    ];
+
+    Line::from(span_vec)
+}
+
 fn render_categories(app: &mut App, frame: &mut Frame, area: Rect){
     let mut items: Vec<ListItem> = Vec::new();
-    let size: u16 = area.width;
+    let size: u16 = area.width - 6;
     for (i, category) in app.data.categories.iter().enumerate(){
-        let bar_size = size as usize - 20 - format!("{}", category.lvl).chars().count() - 12;
-        let category_bars: u32 = category.exp * bar_size as u32 / category.exp_to_next_lvl;
-        let bar: String = format!("|{:_<1$}|", format!("{:X<1$}", "", category_bars as usize), bar_size);
+        let label_left = format!("{}", category.name);
+        let label_right = format!("{}/{} : {}", category.exp, category.exp_to_next_lvl, category.lvl);
+        let ratio = category.exp as f32 / category.exp_to_next_lvl as f32;
 
-        let category_text = format!("{: <20} {} {}", category.name, bar, category.lvl);
-
-        let style = if i == app.cur_category as usize{
+        if i == app.cur_category as usize{
             if app.state == AppState::Categories{
-                app.theme.selection
+                items.push(ListItem::new(build_gauge(app, label_left, label_right, ratio, size, GaugeState::Focus)));
             }
             else{
-                app.theme.faded_selection
+               items.push(ListItem::new(build_gauge(app, label_left, label_right, ratio, size, GaugeState::FadedFocus)));
             }
         }else{
-            app.theme.passive
-        };
-
-        items.push(ListItem::new(Line::from(Span::styled(
-            category_text,
-            style,
-        ))));
+            items.push(ListItem::new(build_gauge(app, label_left, label_right, ratio, size, GaugeState::Passive)));
+        }
     }
     let category_list = List::new(items);
 
@@ -234,6 +252,26 @@ fn render_milestones(app: &mut App, frame: &mut Frame, area: Rect){
 }
 
 fn render_timers(app: &mut App, frame: &mut Frame, area: Rect){
+    let mut items: Vec<ListItem> = Vec::new();
+    let size: u16 = area.width - 6;
+    for (i, timer) in app.timers.iter().enumerate(){
+        let label_left = format!("{}", timer.category_name);
+        let label_right = format!(": {}", timer.get_minutes());
+        let ratio = timer.get_second() as f32 / 60 as f32;
+
+        if i == app.cur_timer as usize{
+            if app.state == AppState::Timers{
+                items.push(ListItem::new(build_gauge(app, label_left, label_right, ratio, size, GaugeState::Focus)));
+            }
+            else{
+               items.push(ListItem::new(build_gauge(app, label_left, label_right, ratio, size, GaugeState::FadedFocus)));
+            }
+        }else{
+            items.push(ListItem::new(build_gauge(app, label_left, label_right, ratio, size, GaugeState::Passive)));
+        }
+    }
+    let category_list = List::new(items);
+
     let style = if app.state == AppState::Timers{
         app.theme.active
     }else if app.get_cur_component() == Some(&AppComponent::Timers){
@@ -248,7 +286,7 @@ fn render_timers(app: &mut App, frame: &mut Frame, area: Rect){
         .padding(Padding::new(2, 4, 1, 1))
         .style(style);
 
-    frame.render_widget(block, area);
+    frame.render_widget(category_list.block(block), area);
 }
 
 fn render_new_category(app: &mut App, frame: &mut Frame, width: u16, height: u16, area: Rect){

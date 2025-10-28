@@ -1,3 +1,6 @@
+use std::fs::File;
+use std::io::{self, Read, Write};
+
 use crate::json_types::{self, Category, Data, Milestone, Task};
 use crate::theme::Theme;
 use crate::timer::Timer;
@@ -38,6 +41,17 @@ pub enum AppEdit{
     Date,
 }
 
+pub struct AppConfig{
+    pub exp_power: f32,
+}
+impl AppConfig{
+    pub fn new() -> Self{
+        Self {
+            exp_power: 0.85
+        }
+    }
+}
+
 pub struct App{
     pub exit: bool,
     pub state: AppState,
@@ -49,6 +63,7 @@ pub struct App{
     pub cur_milestone: u32,
     pub cur_timer: u32,
     pub data: json_types::Data,
+    pub app_config: AppConfig,
     pub timers: Vec<Timer>,
 
     pub theme: Theme,
@@ -83,6 +98,7 @@ impl App{
             cur_milestone: 0,
             cur_timer: 0,
             data: Data::new(),
+            app_config: AppConfig::new(),
             timers: Vec::new(),
 
             theme: Theme::dark_theme(),
@@ -101,6 +117,30 @@ impl App{
     /*pub fn init(app_data: Vec<(AppComponent, (u32, u32), (u32, u32))>) -> Self{
         
     }*/
+
+    pub fn load_data(&mut self) -> io::Result<()>{
+        let mut file = File::open("data.json")?;
+        let mut content = String::new();
+        file.read_to_string(&mut content)?;
+
+        self.data = serde_json::from_str(&content)?;
+
+        Ok(())
+    }
+
+    pub fn save_data(&mut self) -> io::Result<()>{
+        while self.timers.len() > 0{
+            self.cur_timer = 0;
+            let _ = self.finish_timer();
+        }
+
+        let data: String = serde_json::to_string(&self.data)?;
+
+        let mut file = File::create("data.json")?;
+        file.write_all(data.as_bytes())?;
+
+        Ok(())
+    }
 
     pub fn get_cur_component(&self) -> Option<&AppComponent>{
         if let Some(inner_vec) = self.app_grid.get(self.grid_cursor.1) {
@@ -128,6 +168,7 @@ impl App{
         Ok(())
     }
     pub fn delete_category(&mut self) -> Result<(), ()>{
+        let _ = self.finish_timer_on_category_id();
         self.data.remove_category(self.cur_category as usize)?;
         self.cur_category = 0;
         Ok(())
@@ -153,6 +194,15 @@ impl App{
         }
         Err(())
     }
+    pub fn finish_task(&mut self) -> Result<(), ()>{
+        if let Some(category) = self.data.get_category_mut(self.cur_category as usize){
+            if let Some(task) = category.get_task(self.cur_task as usize){
+                category.increase_exp(task.exp_reward, self.app_config.exp_power);
+                return Ok(())
+            }
+        }
+        Err(())
+    }
     pub fn save_milestone(&mut self) -> Result<(), ()>{
         if let Some(category) = self.data.get_category_mut(self.cur_category as usize){
             let name = self.edit_name.clone();
@@ -165,6 +215,57 @@ impl App{
 
             category.add_milestone(Milestone::init(name, exp))?;
             return Ok(());
+        }
+        Err(())
+    }
+    pub fn finish_milestone(&mut self) -> Result<(), ()>{
+        if let Some(category) = self.data.get_category_mut(self.cur_category as usize){
+            if let Some(milestone) = category.get_milestone(self.cur_milestone as usize){
+                category.increase_exp(milestone.exp_reward, self.app_config.exp_power);
+                category.remove_milestone(self.cur_milestone as usize)?;
+                return Ok(())
+            }
+        }
+        Err(())
+    }
+
+    pub fn run_timer(&mut self) -> Result<(), ()>{
+        if let Some(category) = self.data.get_category(self.cur_category as usize){
+            for timer in self.timers.iter(){
+                if timer.category_id == category.get_uid(){
+                    self.error_message = "Timer for that category already exist".to_string();
+                    return Err(());
+                }
+            }
+            let timer = Timer::new(category);
+            self.timers.push(timer);
+            return Ok(());
+        }
+        Err(())
+    }
+
+    pub fn finish_timer(&mut self) -> Result<(), ()>{
+        if let Some(timer) = self.timers.get(self.cur_timer as usize){
+            for category in self.data.categories.iter_mut(){
+                if timer.category_id == category.get_uid(){
+                    category.increase_exp(timer.get_minutes(), self.app_config.exp_power);
+                    break;
+                }
+            }
+            self.timers.remove(self.cur_timer as usize);
+            return Ok(());
+        }
+        Err(())
+    }
+    pub fn finish_timer_on_category_id(&mut self) -> Result<(), ()>{
+        if let Some(category) = self.data.get_category_mut(self.cur_category as usize){
+            for (i, timer) in self.timers.iter().enumerate(){
+                if category.get_uid() == timer.category_id{
+                    category.increase_exp(timer.get_minutes(), self.app_config.exp_power);
+                    self.timers.remove(i as usize);
+                    return Ok(());
+                }
+            }
         }
         Err(())
     }

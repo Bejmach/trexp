@@ -1,16 +1,18 @@
-use std::io;
+use std::{io, time::Duration};
 
 use ratatui::crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 
 use crate::app::{App, AppComponent, AppEdit, AppState};
 
-pub fn handle_events(app: &mut App) -> io::Result<()>{
-    match event::read()? {
-        Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-            handle_key_event(app, key_event);
-        },
-        _ => {}
-    };
+pub fn handle_events(app: &mut App, timeout: Duration) -> io::Result<()>{
+    if event::poll(timeout)?{
+        match event::read()? {
+            Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
+                handle_key_event(app, key_event);
+            },
+            _ => {}
+        };
+    }
     Ok(())
 }
 
@@ -43,6 +45,10 @@ fn handle_key_event(app: &mut App, key_event: KeyEvent){
 fn main_key_events(app: &mut App, key_event: KeyEvent){
     match key_event.code{
         KeyCode::Char('q') => app.exit = true,
+        KeyCode::Char('s') => {
+            let _ = app.save_task();
+            app.result_message = "Data saved".to_string();
+        },
         KeyCode::Up => app.move_cursor_up(),
         KeyCode::Down => app.move_cursor_down(),
         KeyCode::Left => app.move_cursor_left(),
@@ -65,7 +71,18 @@ fn categories_key_events(app: &mut App, key_event: KeyEvent){
     match key_event.code{
         KeyCode::Char('q') => app.state = AppState::Main,
         KeyCode::Char('n') => app.state = AppState::CreateCategory,
-        KeyCode::Char('T') => {/*Create timer*/},
+        KeyCode::Char('t') => {
+            if app.finish_timer_on_category_id().is_ok(){
+                app.result_message = "Timer stopped".to_string();
+                return;
+            }
+            if app.run_timer().is_ok(){
+                app.result_message = "Timer started".to_string();
+                return;
+            }
+            app.error_message = "Couldn't toggle timer".to_string();
+
+        },
         KeyCode::Char('e') => {
             if let Some(category) = app.data.get_category_mut(app.cur_category as usize){
                 app.edit_name = category.name.clone();
@@ -151,6 +168,14 @@ fn tasks_key_events(app: &mut App, key_event: KeyEvent){
             app.state = AppState::CreateTask;
             app.cur_edit = AppEdit::Name;
         },
+        KeyCode::Char('c') => {
+            if app.finish_task().is_err(){
+                app.error_message = "Failed to complete task".to_string();
+            }
+            else{
+                app.result_message = "Task completed".to_string();
+            }
+        }
         KeyCode::Up => app.id_up(),
         KeyCode::Down => app.id_down(),
         KeyCode::PageUp => {
@@ -233,6 +258,14 @@ fn milestones_key_events(app: &mut App, key_event: KeyEvent){
             app.state = AppState::CreateMilestone;
             app.cur_edit = AppEdit::Name;
         },
+        KeyCode::Char('c') => {
+            if app.finish_milestone().is_err(){
+                app.error_message = "Failed to complete milestone".to_string();
+            }
+            else{
+                app.result_message = "Milestone completed".to_string();
+            }
+        }
         KeyCode::Up => app.id_up(),
         KeyCode::Down => app.id_down(),
         KeyCode::PageUp => {
