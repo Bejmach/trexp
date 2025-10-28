@@ -22,6 +22,18 @@ impl Data{
         self.categories.push(category);
         Ok(())
     }
+    pub fn edit_category(&mut self, id: usize, name: String) -> Result<(), ()>{
+        for old_category in self.categories.iter(){
+            if old_category.name == name{
+                return Err(());
+            }
+        }
+        if let Some(category) = self.get_category_mut(id){
+            category.set_name(name);
+            return Ok(());
+        }
+        Err(())
+    }
     pub fn move_category(&mut self, id: usize, by: i32) -> Result<(), ()>{
         if (id as i32 + by < 0) || (id as i32 + by >= self.categories.len() as i32){
             return Err(());

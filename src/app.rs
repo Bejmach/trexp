@@ -16,12 +16,15 @@ pub enum AppState{
     Categories,
     CreateCategory,
     DeleteCategory,
+    EditCategory,
     Tasks,
     CreateTask,
     DeleteTask,
+    EditTask,
     Milestones,
     CreateMilestone,
     DeletaMilestone,
+    EditMilestone,
     Timers,
     Save,
     Exit,
@@ -57,6 +60,7 @@ pub struct App{
     pub edit_name: String,
     pub edit_exp: String,
 
+    pub result_message: String,
     pub error_message: String,
 }
 
@@ -90,6 +94,7 @@ impl App{
             edit_name: String::new(),
             edit_exp: String::new(),
 
+            result_message: String::new(),
             error_message: String::new(),
         }
     }
@@ -120,6 +125,17 @@ impl App{
         self.edit_name = String::new();
         self.data.add_category(Category::init(&name))?;
         
+        Ok(())
+    }
+    pub fn delete_category(&mut self) -> Result<(), ()>{
+        self.data.remove_category(self.cur_category as usize)?;
+        self.cur_category = 0;
+        Ok(())
+    }
+    pub fn edit_category(&mut self) -> Result<(), ()>{
+        let name = self.edit_name.clone();
+        self.edit_name = String::new();
+        self.data.edit_category(self.cur_category as usize, name)?;
         Ok(())
     }
     pub fn save_task(&mut self) -> Result<(), ()>{

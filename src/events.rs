@@ -15,9 +15,12 @@ pub fn handle_events(app: &mut App) -> io::Result<()>{
 }
 
 fn handle_key_event(app: &mut App, key_event: KeyEvent){
-    if app.error_message != "" {
+    if app.error_message != "" || app.result_message != "" {
         match key_event.code{
-            KeyCode::Enter => app.error_message = String::new(),
+            KeyCode::Enter => {
+                app.error_message = String::new();
+                app.result_message = String::new();
+            },
             _ => {},
         }
     }
@@ -26,6 +29,7 @@ fn handle_key_event(app: &mut App, key_event: KeyEvent){
             AppState::Main => main_key_events(app, key_event),
             AppState::Categories => categories_key_events(app, key_event),
             AppState::CreateCategory => create_category_key_events(app, key_event),
+            AppState::EditCategory => edit_category_key_events(app, key_event),
             AppState::Tasks => tasks_key_events(app, key_event),
             AppState::CreateTask => create_task_key_events(app, key_event),
             AppState::Milestones => milestones_key_events(app, key_event),
@@ -62,6 +66,21 @@ fn categories_key_events(app: &mut App, key_event: KeyEvent){
         KeyCode::Char('q') => app.state = AppState::Main,
         KeyCode::Char('n') => app.state = AppState::CreateCategory,
         KeyCode::Char('T') => {/*Create timer*/},
+        KeyCode::Char('e') => {
+            if let Some(category) = app.data.get_category_mut(app.cur_category as usize){
+                app.edit_name = category.name.clone();
+            }
+            else{
+                app.error_message = "Couldn't get category to edit".to_string();
+                return;
+            }
+            app.set_state(AppState::EditCategory);    
+        }
+        KeyCode::Char('d') => {
+            if app.delete_category().is_ok() {
+                app.result_message = "Category succesfully deleted".to_string();
+            };
+        }
         KeyCode::Up => app.id_up(),
         KeyCode::Down => app.id_down(),
         KeyCode::PageUp => {
@@ -99,11 +118,36 @@ fn create_category_key_events(app: &mut App, key_event: KeyEvent){
         _ => {},
     }
 }
+fn edit_category_key_events(app: &mut App, key_event: KeyEvent){
+    match key_event.code{
+        KeyCode::Esc => {
+            app.set_state(AppState::Categories);
+            app.edit_name = String::new();
+        },
+        KeyCode::Enter => {
+            if app.edit_category().is_err(){
+                app.error_message = "Error while editing category".to_string();
+            }
+            app.set_state(AppState::Categories);
+        },
+        KeyCode::Backspace => {
+            app.edit_name.pop();
+        }
+        KeyCode::Char(value) => {
+            app.edit_name.push(value);
+        },
+        _ => {},
+    }
+}
 
 fn tasks_key_events(app: &mut App, key_event: KeyEvent){
     match key_event.code{
         KeyCode::Char('q') => app.state = AppState::Main,
         KeyCode::Char('n') => {
+            if app.data.get_category(app.cur_category as usize).is_none(){
+                app.error_message = "Cant create task for nonexisting category".to_string();
+                return;
+            }
             app.state = AppState::CreateTask;
             app.cur_edit = AppEdit::Name;
         },
@@ -182,6 +226,10 @@ fn milestones_key_events(app: &mut App, key_event: KeyEvent){
     match key_event.code{
         KeyCode::Char('q') => app.state = AppState::Main,
         KeyCode::Char('n') => {
+            if app.data.get_category(app.cur_category as usize).is_none(){
+                app.error_message = "Cant create milestone for nonexisting category".to_string();
+                return;
+            }
             app.state = AppState::CreateMilestone;
             app.cur_edit = AppEdit::Name;
         },

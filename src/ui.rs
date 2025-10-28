@@ -29,7 +29,7 @@ pub fn ui(frame: &mut Frame, app: &mut App){
         ])
         .split(inner_chunks[1]);
 
-    let hint_binds = if app.error_message != ""{
+    let hint_binds = if app.error_message != "" || app.result_message != ""{
         vec![("Enter", "Accept")]
     }else{
         match app.state{
@@ -44,31 +44,24 @@ pub fn ui(frame: &mut Frame, app: &mut App){
                 ("up/down", "Move"),
                 ("pgUp/pgDown", "Move category"),
                 ("n", "New"),
+                ("d", "Delete"),
+                ("e", "Edit"),
             ],
-            AppState::CreateCategory => vec![
+            AppState::CreateCategory | AppState::EditCategory => vec![
                 ("Enter", "Accept"),
                 ("Esc", "Cancel"),
             ],
-            AppState::Tasks => vec![
+            AppState::Tasks | AppState::Milestones => vec![
                 ("q", "Quit"),
                 ("Enter", "Select"),
                 ("up/down", "Move"),
                 ("pgUp/pgDown", "Move task"),
                 ("n", "New"),
+                ("e", "Edit"),
+                ("d", "Delete"),
+                ("c", "Complete"),
             ],
-            AppState::CreateTask => vec![
-                ("Enter", "Accept"),
-                ("Esc", "Cancel"),
-                ("left/right", "Change edit box"),
-            ],
-            AppState::Milestones => vec![
-                ("q", "Quit"),
-                ("Enter", "Select"),
-                ("up/down", "Move"),
-                ("pgUp/pgDown", "Move milestone"),
-                ("n", "New"),
-            ],
-            AppState::CreateMilestone => vec![
+            AppState::CreateTask | AppState::CreateMilestone => vec![
                 ("Enter", "Accept"),
                 ("Esc", "Cancel"),
                 ("left/right", "Change edit box"),
@@ -87,7 +80,7 @@ pub fn ui(frame: &mut Frame, app: &mut App){
     render_help(app, frame, chunks[3], hint_binds);
 
     match app.state{
-        AppState::CreateCategory => {
+        AppState::CreateCategory | AppState::EditCategory => {
             render_new_category(app, frame, 60, 25, inner_chunks[0]);
         },
         AppState::CreateTask => {
@@ -99,6 +92,9 @@ pub fn ui(frame: &mut Frame, app: &mut App){
         _ => {}
     }
 
+    if app.result_message != "" {
+        render_result(app, frame, 40, 20, frame.area());
+    }
     if app.error_message != "" {
         render_error(app, frame, 40, 20, frame.area());
     }
@@ -375,6 +371,20 @@ fn render_new_milestone(app: &mut App, frame: &mut Frame, width: u16, height: u1
 
     frame.render_widget(name_paragraph, task_layout[0]);
     frame.render_widget(exp_paragraph, task_layout[1]);
+}
+
+fn render_result(app: &mut App, frame: &mut Frame, width: u16, height: u16, area: Rect){
+    let block = Block::bordered()
+        .border_set(border::ROUNDED)
+        .padding(Padding::new(3, 3, 1, 1));
+
+    let paragraph = Paragraph::new(app.result_message.clone())
+        .centered()
+        .block(block)
+        .style(app.theme.floating);
+
+    let area = centered_rect(width, height, area);
+    frame.render_widget(paragraph, area);
 }
 
 fn render_error(app: &mut App, frame: &mut Frame, width: u16, height: u16, area: Rect){
