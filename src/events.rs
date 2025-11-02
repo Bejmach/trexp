@@ -2,7 +2,7 @@ use std::{io, time::Duration};
 
 use ratatui::crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 
-use crate::app::{App};
+use crate::app::{App, InputMode};
 
 pub fn handle_events(app: &mut App, timeout: Duration) -> io::Result<()>{
     if event::poll(timeout)?{
@@ -24,6 +24,30 @@ fn handle_key_event(app: &mut App, key_event: KeyEvent){
                 app.result_message = String::new();
             },
             _ => {}
+        }
+    }
+    else if app.input_mode != InputMode::Undefined && let Some(event_config) = app.app_config.keybinds.get(&app.state){
+        match key_event.code{
+            KeyCode::Char(value) => {
+                match app.input_mode{
+                    InputMode::Text => {
+                        app.input_buffer.push(value);
+                    },
+                    InputMode::Number => {
+                        match value{
+                            '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '0' => app.input_buffer.push(value),
+                            _ => {}
+                        }
+                    },
+                    _ => {}
+                }
+            }
+            _ => {
+                let key_str = key_event_to_string(key_event);
+                if let Some(command) = event_config.get(&key_str){
+                    app.run_command_string(command.to_string());
+                }
+            }
         }
     }
     else if let Some(event_config) = app.app_config.keybinds.get(&app.state){

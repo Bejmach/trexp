@@ -1,9 +1,9 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 
 use ratatui::{layout::Rect, Frame};
 use serde::{Deserialize, Serialize};
 
-use crate::{json_types::{self, Data}, layout_conf::{to_layouts, LayoutNode}, theme::{StyleData, Theme}, traits::tr_widget::TrWidget, ui::{centered_rect, render_error, render_result, widgets::WidgetData}, wild_type::{Generic, Variant}};
+use crate::{json_types::{self, Data}, layout_conf::{to_layouts, LayoutNode}, theme::{StyleData, Theme}, traits::tr_widget::TrWidget, ui::{render_error, render_result, widgets::WidgetData}, wild_type::{Generic, Variant}};
 
 pub enum AppCommands{
     Undefined,
@@ -16,6 +16,9 @@ pub enum AppCommands{
     Result(String),
     Set(String, Variant),
     Change(String, i64),
+    Remove(String),
+    OpenBuffer(String, InputMode),
+    SaveBuffer,
 }
 
 impl AppCommands{
@@ -61,6 +64,15 @@ impl AppCommands{
                     let value =  params.get(1).expect("").trim().to_string().parse::<i64>().expect("");
                     AppCommands::Change(key, value)
                 }
+                "remove" => {
+                    let key = params.get(0).expect("").trim().to_string();
+                    AppCommands::Remove(key)
+                }
+                "openbuffer" => {
+                    let name = params.get(0).expect("").trim().to_string();
+                    let mode = InputMode::from_str(params.get(1).expect("").to_string());
+                    AppCommands::OpenBuffer(name, mode)
+                }
                 _ => AppCommands::Undefined,
             }
         }
@@ -69,6 +81,7 @@ impl AppCommands{
             
             return match command{
                 "quit" => AppCommands::Quit,
+                "savebuffer" => AppCommands::SaveBuffer,
                 _ => AppCommands::Undefined,
             }
         }
@@ -112,6 +125,25 @@ impl AppConfig{
     }
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum InputMode{
+    Undefined,
+    Text,
+    Number,
+}
+
+impl InputMode{
+    pub fn from_str(value: String) -> InputMode{
+        let value = value.to_lowercase();
+        let value = value.trim();
+        match value{
+            "text" => InputMode::Text,
+            "number" => InputMode::Number,
+            _ => InputMode::Undefined,
+        }
+    }
+}
+
 pub struct App{
     pub exit: bool,
     pub state: String,
@@ -125,8 +157,9 @@ pub struct App{
     pub global_lvl: u32,
     pub global_exp: u32,
 
-    pub cur_edit: u32,
-    pub edit_data: Vec<String>,
+    pub input_mode: InputMode,
+    pub buffer_name: Option<String>,
+    pub input_buffer: String,
 
     pub result_message: String,
     pub error_message: String,
@@ -144,8 +177,9 @@ impl App{
             theme: Theme::dark_theme(),
             global_lvl: 0,
             global_exp: 0,
-            cur_edit: 0,
-            edit_data: Vec::new(),
+            input_mode: InputMode::Undefined,
+            buffer_name: None,
+            input_buffer: String::new(),
             result_message: String::new(),
             error_message: String::new(),
             additional_data: HashMap::new()
@@ -188,6 +222,15 @@ impl App{
             AppCommands::Change(key, value) => {
                 self.change_data(key.to_string(), *value);
             }
+            AppCommands::Remove(key) => {
+                self.remove_data(key.to_string());
+            }
+            AppCommands::OpenBuffer(name, mode) => {
+                self.open_buffer(name.to_string(), mode.clone());
+            }
+            AppCommands::SaveBuffer => {
+                self.save_buffer();
+            }
             _ => {}
         }
     }
@@ -217,23 +260,24 @@ impl App{
         }
     }
 
-    pub fn set_data(&mut self, key: String, value: Variant){
-        if let Some(old_value) = self.additional_data.get(&key){
-            match old_value{
-                Variant::Int(old_int) => {
-                    match value{
-                        Variant::Int(new_int) => {
-                            self.additional_data.insert(key, Variant::from_string(&(old_int + new_int).to_string(), &Generic::Int));
-                        },
-                        _ => {}
-                    }
-                },
+    pub fn open_buffer(&mut self, name: String, mode: InputMode){
+        self.input_mode = Some(mode);
+        self.buffer_name = Some(name);
+        self.input_buffer = String::new();
+    }
+
+    pub fn save_buffer(&mut self){
+        if let Some(mode) = &self.input_mode && let Some(name) = &self.buffer_name{
+            match mode{
+                InputMode::Number => self.set_data(name.to_string(), Variant::from_string(&self.input_buffer, &Generic::Int)),
+                InputMode::Text => self.set_data(name.to_string(), Variant::from_string(&self.input_buffer, &Generic::Str)),
                 _ => {}
             }
         }
-        else{
-            self.additional_data.insert(key, value);
-        }
+    }
+
+    pub fn set_data(&mut self, key: String, value: Variant){
+        self.additional_data.insert(key, value);
     }
     pub fn change_data(&mut self, key: String, value: i64){
         if let Some(old_value) = self.additional_data.get(&key){
@@ -244,6 +288,9 @@ impl App{
                 _ => {}
             }
         }
+    }
+    pub fn remove_data(&mut self, key: String){
+        self.additional_data.remove(&key);
     }
 
     pub fn resize_constraint(&mut self, layout_id: String, constraint: usize, new_value: String){
@@ -268,7 +315,14 @@ impl App{
         
     }
     pub fn set_state(&mut self, state: String){
-        if self.app_config.states.contains(&state){
+        if state.starts_with("$"){
+            if let Some(Variant::Str(val_state)) = self.additional_data.get(&state[1..]){
+                if self.app_config.states.contains(val_state){
+                    self.state = val_state.to_string();
+                }
+            }
+        }
+        else if self.app_config.states.contains(&state){
             self.state = state;
         }
     }

@@ -8,11 +8,11 @@ mod json_types;
 mod theme;
 mod wild_type;
 
-use std::{collections::HashMap, error::Error, fs::File, io::{self, Read}, time::{Duration, Instant}};
+use std::{error::Error, fs::File, io::{self, Read}, time::{Duration, Instant}};
 
-use ratatui::{layout::Rect, prelude::Backend, Terminal};
+use ratatui::{prelude::Backend, Terminal};
 
-use crate::{app::App, events::handle_events, json_types::Category, layout_conf::{to_layouts, LayoutNode}, ui::ui};
+use crate::{app::App, events::handle_events, json_types::Category, ui::ui};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut file = File::open("config.json")?;

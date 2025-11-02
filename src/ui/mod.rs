@@ -6,9 +6,9 @@ pub mod help;
 pub mod milestones;
 
 
-use ratatui::{layout::{Constraint, Direction, Layout, Rect}, symbols::border, widgets::{Block, Padding, Paragraph}, Frame};
+use ratatui::{layout::{Constraint, Direction, Layout, Rect}, symbols::border, widgets::{Block, Clear, Padding, Paragraph}, Frame};
 
-use crate::{app::{self, App}, layout_conf::to_layouts, traits::tr_widget::TrWidget, ui::categories::CategoriesWidget};
+use crate::app::App;
 
 
 
@@ -27,6 +27,7 @@ pub fn render_result(app: &mut App, frame: &mut Frame, width: u16, height: u16, 
         .style(app.theme.floating);
 
     let area = centered_rect(width, height, area);
+    frame.render_widget(Clear, area);
     frame.render_widget(paragraph, area);
 }
 
@@ -41,6 +42,7 @@ pub fn render_error(app: &mut App, frame: &mut Frame, width: u16, height: u16, a
         .style(app.theme.error);
 
     let area = centered_rect(width, height, area);
+    frame.render_widget(Clear, area);
     frame.render_widget(paragraph, area);
 }
 

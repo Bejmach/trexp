@@ -3,7 +3,7 @@
 		{
 			"id": "main",
 			"direction": "Vertical",
-			"constraints": ["l.3", "p.70", "p.30", "l.3"]
+			"constraints": ["l.3", "p.70", "p.30"]
 		},
 		{
 			"id": "widgets",
@@ -18,20 +18,22 @@
 			"parent": "widgets.1"
 		}
 	],
-	"states": ["CategoriesFocus", "CategoriesActive", "TasksFocus", "TasksActive", "MilestonesFocus", "MilestonesActive"],
+	"states": ["CategoriesFocus", "CategoriesActive", "TasksFocus", "TasksActive", "MilestonesFocus", "MilestonesActive", "HelpPreview"],
 	"keybinds": {
 		"CategoriesFocus": {
 			"Enter": "State(CategoriesActive)",
 			"Right": "State(TasksFocus)",
 			"Left": "State(TasksFocus)",
-			"C(q)": "quit"
+			"C(q)": "quit",
+			"C(h)": "Set(last_state, CategoriesFocus);State(HelpPreview);Toggle(help)"
 		},
 		"CategoriesActive": {
 			"Esc": "State(CategoriesFocus)",
 			"Enter": "Result(adding categories not yet supported)",
 			"Down": "Change(category_id, 1)",
 			"Up": "Change(category_id, -1)",
-			"C(q)": "State(CategoriesFocus)"
+			"C(q)": "State(CategoriesFocus)",
+			"C(h)": "Set(last_state, CategoriesActive);State(HelpPreview);Toggle(help)"
 		},
 		"TasksFocus": {
 			"Enter": "State(TasksActive)",
@@ -39,14 +41,16 @@
 			"Left": "State(CategoriesFocus)",
 			"Down": "State(MilestonesFocus)",
 			"Up": "State(MilestonesFocus)",
-			"C(q)": "quit"
+			"C(q)": "quit",
+			"C(h)": "Set(last_state, TasksFocus);State(HelpPreview);Toggle(help)"	
 		},
 		"TasksActive": {
 			"Esc": "State(TasksFocus)",
 			"Enter": "Result(adding tasks not yet supported)",
 			"Down": "Change(task_id, 1)",
 			"Up": "Change(task_id, -1)",
-			"C(q)": "State(TasksFocus)"
+			"C(q)": "State(TasksFocus)",
+			"C(h)": "Set(last_state, TasksActive);State(HelpPreview);Toggle(help)"
 		},
 		"MilestonesFocus": {
 			"Enter": "State(MilestonesActive)",
@@ -54,16 +58,21 @@
 			"Left": "State(CategoriesFocus)",
 			"Down": "State(TasksFocus)",
 			"Up": "State(TasksFocus)",
-			"C(q)": "quit"
+			"C(q)": "quit",
+			"C(h)": "Set(last_state, MilestonesFocus);State(HelpPreview);Toggle(help)"
 		},
 		"MilestonesActive": {
 			"Esc": "State(MilestonesFocus)",
 			"Enter": "Result(adding milestones not yet supported)",
 			"Down": "Change(milestone_id, 1)",
 			"Up": "Change(milestone_id, -1)",
-			"C(q)": "State(MilestonesFocus)"
+			"C(q)": "State(MilestonesFocus)",
+			"C(h)": "Set(last_state, MilestonesActive);State(HelpPreview);Toggle(help)"
+		},
+		"HelpPreview": {
+			"Esc": "State($last_state);Toggle(help)",
+			"C(q)": "State($last_state);Toggle(help)"	
 		}
-
 	},
 	"styles": {
 		"active": {
@@ -112,14 +121,21 @@
 		},
 		{
 			"widget_type": "Help",
-			"layout": "main",
-			"constraint": 3,
-			"styles": {}
+			"id": "help",
+			"layout": "frame",
+			"constraint": 0,
+			"styles": {
+				"HelpPreview": "active",
+				"_": "passive"
+			},
+			"constraint_fit": {"Centered": {"percent_x": 60, "percent_y": 40}},
+			"visible": false
 		}
 	],
 	"values": {
 		"category_id": "0",
 		"task_id": "0",
-		"milestone_id": "0"
+		"milestone_id": "0",
+		"last_state": "_"
 	}
 }

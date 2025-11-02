@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
-use ratatui::layout::Constraint;
 use serde::{Deserialize, Serialize};
 
-use crate::{json_types::Milestone, traits::tr_widget::TrWidget, ui::{categories::CategoriesWidget, help::HelpWidget, milestones::MilestoneWidget, tasks::TaskWidget}, wild_type::Variant};
+use crate::{traits::tr_widget::TrWidget, ui::{categories::CategoriesWidget, help::HelpWidget, milestones::MilestoneWidget, tasks::TaskWidget}, wild_type::Variant};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum WidgetTypes{
@@ -17,7 +16,7 @@ pub enum WidgetTypes{
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ConstraintFit{
     Default,
-    Center {percent_x: u16, percent_y: u16},
+    Centered {percent_x: u16, percent_y: u16},
 }
 
 impl WidgetTypes{

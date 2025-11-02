@@ -1,6 +1,6 @@
-use std::{collections::HashMap, io, str::FromStr};
+use std::str::FromStr;
 
-use ratatui::{style::{Color, Modifier, Style}, symbols::border};
+use ratatui::style::{Color, Modifier, Style};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]

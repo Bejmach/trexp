@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use ratatui::{layout::Rect, style::Stylize, symbols::border, text::{Line, Span}, widgets::{Block, List, ListItem, Padding}};
 
-use crate::{theme::StyleData, traits::tr_widget::TrWidget, ui::{centered_rect, widgets::{variant_id_to_usize, ConstraintFit, WidgetData}}, wild_type::Variant};
+use crate::{theme::StyleData, traits::tr_widget::TrWidget, ui::{centered_rect, widgets::{variant_id_to_usize, ConstraintFit, WidgetData}}};
 
 pub struct MilestoneWidget{}
 
@@ -29,7 +29,7 @@ impl TrWidget for MilestoneWidget{
             if let Some(category) = app.data.get_category(category_id){
                 let area = match widget.constraint_fit{
                     ConstraintFit::Default => layout_data.get(&widget.layout).expect("no layout with provided id").get(widget.constraint).expect("no constraint with provided id"),
-                    ConstraintFit::Center { percent_x, percent_y } => &centered_rect(percent_x, percent_y, *layout_data.get(&widget.layout).expect("no layout with provided id").get(widget.constraint).expect("no constraint with provided id"))
+                    ConstraintFit::Centered { percent_x, percent_y } => &centered_rect(percent_x, percent_y, *layout_data.get(&widget.layout).expect("no layout with provided id").get(widget.constraint).expect("no constraint with provided id"))
             };
                 let milestone_id = app.additional_data.get("milestone_id").expect("");
                 let milestone_id = variant_id_to_usize(milestone_id, category.milestones.len());

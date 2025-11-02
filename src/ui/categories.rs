@@ -1,8 +1,8 @@
-use std::{collections::HashMap, str::FromStr};
+use std::collections::HashMap;
 
-use ratatui::{layout::Rect, style::{Color, Style, Stylize}, symbols::border, text::Line, widgets::{Block, List, ListItem, Padding}};
+use ratatui::{layout::Rect, style::Stylize, symbols::border, text::Line, widgets::{Block, List, ListItem, Padding}};
 
-use crate::{theme::{GaugeState, StyleData}, traits::tr_widget::TrWidget, ui::{centered_rect, gauge::build_gauge, widgets::{variant_id_to_usize, ConstraintFit, WidgetData}}, wild_type::Variant};
+use crate::{theme::{GaugeState, StyleData}, traits::tr_widget::TrWidget, ui::{centered_rect, gauge::build_gauge, widgets::{variant_id_to_usize, ConstraintFit, WidgetData}}};
 
 pub struct CategoriesWidget{}
 
@@ -18,7 +18,7 @@ impl TrWidget for CategoriesWidget{
         if let Some(id) = category_id{
             let area = match widget.constraint_fit{
                 ConstraintFit::Default => layout_data.get(&widget.layout).expect("no layout with provided id").get(widget.constraint).expect("no constraint with provided id"),
-                ConstraintFit::Center { percent_x, percent_y } => &centered_rect(percent_x, percent_y, *layout_data.get(&widget.layout).expect("no layout with provided id").get(widget.constraint).expect("no constraint with provided id"))
+                ConstraintFit::Centered { percent_x, percent_y } => &centered_rect(percent_x, percent_y, *layout_data.get(&widget.layout).expect("no layout with provided id").get(widget.constraint).expect("no constraint with provided id"))
             };
 
             layout_data.get(&widget.layout).expect("no layout with provided id").get(widget.constraint).expect("no constraint with provided id");
