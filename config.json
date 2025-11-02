@@ -1,0 +1,125 @@
+{
+	"layouts": [
+		{
+			"id": "main",
+			"direction": "Vertical",
+			"constraints": ["l.3", "p.70", "p.30", "l.3"]
+		},
+		{
+			"id": "widgets",
+			"direction": "Horizontal",
+			"constraints": ["50", "50"],
+			"parent": "main.1"
+		},
+		{
+			"id": "quests",
+			"direction": "Vertical",
+			"constraints": ["50", "50"],
+			"parent": "widgets.1"
+		}
+	],
+	"states": ["CategoriesFocus", "CategoriesActive", "TasksFocus", "TasksActive", "MilestonesFocus", "MilestonesActive"],
+	"keybinds": {
+		"CategoriesFocus": {
+			"Enter": "State(CategoriesActive)",
+			"Right": "State(TasksFocus)",
+			"Left": "State(TasksFocus)",
+			"C(q)": "quit"
+		},
+		"CategoriesActive": {
+			"Esc": "State(CategoriesFocus)",
+			"Enter": "Result(adding categories not yet supported)",
+			"Down": "Change(category_id, 1)",
+			"Up": "Change(category_id, -1)",
+			"C(q)": "State(CategoriesFocus)"
+		},
+		"TasksFocus": {
+			"Enter": "State(TasksActive)",
+			"Right": "State(CategoriesFocus)",
+			"Left": "State(CategoriesFocus)",
+			"Down": "State(MilestonesFocus)",
+			"Up": "State(MilestonesFocus)",
+			"C(q)": "quit"
+		},
+		"TasksActive": {
+			"Esc": "State(TasksFocus)",
+			"Enter": "Result(adding tasks not yet supported)",
+			"Down": "Change(task_id, 1)",
+			"Up": "Change(task_id, -1)",
+			"C(q)": "State(TasksFocus)"
+		},
+		"MilestonesFocus": {
+			"Enter": "State(MilestonesActive)",
+			"Right": "State(CategoriesFocus)",
+			"Left": "State(CategoriesFocus)",
+			"Down": "State(TasksFocus)",
+			"Up": "State(TasksFocus)",
+			"C(q)": "quit"
+		},
+		"MilestonesActive": {
+			"Esc": "State(MilestonesFocus)",
+			"Enter": "Result(adding milestones not yet supported)",
+			"Down": "Change(milestone_id, 1)",
+			"Up": "Change(milestone_id, -1)",
+			"C(q)": "State(MilestonesFocus)"
+		}
+
+	},
+	"styles": {
+		"active": {
+			"fg": "#DCA55A",
+			"bg": "#000000"
+		},
+		"focus": {
+			"fg": "#C89146",
+			"bg": "#0A0A0A"
+		},
+		"passive": {
+			"fg": "gray",
+			"bg": "#191919"
+		}
+	},
+	"widgets": [
+		{
+			"widget_type": "Categories",
+			"layout": "widgets",
+			"constraint": 0,
+			"styles": {
+				"CategoriesActive": "active",
+				"CategoriesFocus": "focus",
+				"_": "passive"
+			}
+		},
+		{
+			"widget_type": "Tasks",
+			"layout": "quests",
+			"constraint": 0,
+			"styles": {
+				"TasksActive": "active",
+				"TasksFocus": "focus",
+				"_": "passive"
+			}
+		},
+		{
+			"widget_type": "Milestones",
+			"layout": "quests",
+			"constraint": 1,
+			"styles": {
+				"MilestonesActive": "active",
+				"MilestonesFocus": "focus",
+				"_": "passive"
+			}
+		},
+		{
+			"widget_type": "Help",
+			"layout": "main",
+			"constraint": 3,
+			"styles": {}
+		}
+	],
+	"values": {
+		"category_id": "0",
+		"task_id": "0",
+		"milestone_id": "0"
+	}
+}

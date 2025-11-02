@@ -15,8 +15,8 @@ impl Timer{
         }
     }
 
-    pub fn get_second(&self) -> u32{
-        (self.start_time.elapsed().as_secs() % 60) as u32
+    pub fn get_second(&self) -> f32{
+        self.start_time.elapsed().as_secs_f32()
     }
 
     pub fn get_minutes(&self) -> u32{

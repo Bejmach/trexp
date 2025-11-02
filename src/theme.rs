@@ -1,4 +1,53 @@
-use ratatui::style::{Color, Modifier, Style};
+use std::{collections::HashMap, io, str::FromStr};
+
+use ratatui::{style::{Color, Modifier, Style}, symbols::border};
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum TrModifier{
+    Bold,
+    Dim,
+    Reversed,
+}
+
+impl TrModifier{
+    pub fn to_mod(&self) -> Modifier{
+        match self{
+            TrModifier::Bold => Modifier::BOLD,
+            TrModifier::Dim => Modifier::DIM,
+            TrModifier::Reversed => Modifier::REVERSED,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct StyleData{
+    pub fg: String,
+    pub bg: String,
+    #[serde(default = "default_modifier")]
+    pub modifier: Vec<TrModifier>,
+}
+
+fn default_modifier() -> Vec<TrModifier>{Vec::new()}
+
+impl StyleData{
+    pub fn new() -> Self{
+        Self { fg: "#FFFFFF".to_string(), bg: "#000000".to_string(), modifier: Vec::new() }
+    }
+
+    pub fn to_style(&self) -> Style{
+        let mut style = Style::default()
+            .fg(Color::from_str(&self.fg).expect("Wrong color"))
+            .bg(Color::from_str(&self.bg).expect("Wrong color"));
+
+        for modyfier in self.modifier.iter(){
+            let patch = Style::default().add_modifier(modyfier.to_mod());
+            style = style.patch(patch);
+        }
+
+        style
+    } 
+}
 
 pub struct Theme {
     pub active: Style,
@@ -18,17 +67,17 @@ impl Theme {
         Theme {
             active: Style::default()
                 .fg(Color::Rgb(220, 165, 90))
-                .bg(Color::Black) 
+                .bg(Color::Rgb(0, 0, 0)) 
                 .add_modifier(Modifier::BOLD),
 
             focus: Style::default()
                 .fg(Color::Rgb(200, 145, 70))
-                .bg(Color::Rgb(5, 5, 5))
+                .bg(Color::Rgb(10, 10, 10))
                 .add_modifier(Modifier::BOLD),
 
             passive: Style::default()
                 .fg(Color::Gray)
-                .bg(Color::Rgb(10, 10, 10))
+                .bg(Color::Rgb(25, 25, 25))
                 .add_modifier(Modifier::DIM),
 
             selection: Style::default()
@@ -70,6 +119,7 @@ pub enum GaugeState{
     Focus,
     FadedFocus,
     Passive,
+    FadedPassive,
 }
 
 pub struct GaugeStyle {
@@ -83,6 +133,7 @@ pub struct GaugeStyle {
     pub focus: Style,
     pub faded_focus: Style,
     pub passive: Style,
+    pub faded_passive: Style,
 }
 
 impl GaugeStyle {
@@ -95,19 +146,24 @@ impl GaugeStyle {
             margin_left: 15,
             margin_right: 20,
 
-            passive: Style::default()
-                .fg(Color::Rgb(220, 165, 90))
-                .bg(Color::Rgb(10, 10, 10))
-                .add_modifier(Modifier::BOLD),
-
             focus: Style::default()
                 .fg(Color::Rgb(220, 165, 90))
-                .bg(Color::Black)
+                .bg(Color::Rgb(10, 10, 10))
                 .add_modifier(Modifier::BOLD | Modifier::REVERSED),
 
             faded_focus: Style::default()
-                .fg(Color::Rgb(220, 165, 90))
-                .bg(Color::Rgb(30, 30, 30))
+                .fg(Color::White)
+                .bg(Color::Rgb(10, 10, 10))
+                .add_modifier(Modifier::BOLD),
+        
+            passive: Style::default()
+                .fg(Color::Rgb(200, 145, 70))
+                .bg(Color::Rgb(10, 10, 10))
+                .add_modifier(Modifier::BOLD),
+        
+            faded_passive: Style::default()
+                .fg(Color::Gray)
+                .bg(Color::Black)
                 .add_modifier(Modifier::BOLD),
         }
     }

@@ -1,21 +1,33 @@
-mod ui;
 mod app;
-mod json_types;
-mod timer;
 mod events;
+mod ui;
+mod traits;
+mod layout_conf;
+mod timer;
+mod json_types;
 mod theme;
+mod wild_type;
 
-use std::{error::Error, io, time::{Duration, Instant}};
+use std::{collections::HashMap, error::Error, fs::File, io::{self, Read}, time::{Duration, Instant}};
 
-use ratatui::{crossterm::{event::{self, Event}, execute, terminal::{disable_raw_mode, EnterAlternateScreen}}, prelude::{Backend, CrosstermBackend}, text::Text, Frame, Terminal};
+use ratatui::{layout::Rect, prelude::Backend, Terminal};
 
-use crate::{app::App, events::handle_events, json_types::Category, ui::ui};
+use crate::{app::App, events::handle_events, json_types::Category, layout_conf::{to_layouts, LayoutNode}, ui::ui};
 
 fn main() -> Result<(), Box<dyn Error>> {
+    let mut file = File::open("config.json")?;
+    let mut data = String::new();
+
+    file.read_to_string(&mut data)?;
+
     let mut terminal = ratatui::init();
     let mut app = App::new();
 
-    let _ = app.load_data();
+    app.load_config(serde_json::from_str(&data).expect("couldnt parse data"));
+    app.init();
+
+    app.data.add_category(Category::init("test"));
+    app.data.add_category(Category::init("test2"));
 
     run_app(&mut terminal, &mut app)?;
 
@@ -39,6 +51,5 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<(), 
             last_tick = Instant::now();
         }
     }
-    let _ = app.save_data();
     Ok(())
 }

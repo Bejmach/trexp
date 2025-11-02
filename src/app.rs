@@ -1,11 +1,81 @@
-use std::fs::File;
-use std::io::{self, Read, Write};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use crate::json_types::{self, Category, Data, Milestone, Task};
-use crate::theme::Theme;
-use crate::timer::Timer;
+use ratatui::{layout::Rect, Frame};
+use serde::{Deserialize, Serialize};
 
-#[derive(PartialEq, Clone, Copy)]
+use crate::{json_types::{self, Data}, layout_conf::{to_layouts, LayoutNode}, theme::{StyleData, Theme}, traits::tr_widget::TrWidget, ui::{centered_rect, render_error, render_result, widgets::WidgetData}, wild_type::{Generic, Variant}};
+
+pub enum AppCommands{
+    Undefined,
+    Quit,
+    State(String),
+    Toggle(String),
+    // layout_id, constraint, new_value
+    Resize(String, usize, String),
+    Error(String),
+    Result(String),
+    Set(String, Variant),
+    Change(String, i64),
+}
+
+impl AppCommands{
+    fn from_str(value: String) -> Self{
+        let value = value.trim();
+        if let Some(split_id) = value.find("("){
+            
+            let name: &str = &value.to_lowercase()[0..split_id];
+            let name = name.trim();
+
+            let params: Vec<&str> = value[split_id+1..value.len()-1].split(",").collect();
+
+            return match name{
+                "toggle" => {
+                    let layout_id = params.get(0).expect("").trim().to_string();
+                    AppCommands::Toggle(layout_id)
+                },
+                "resize" => {
+                    let layout_id = params.get(0).expect("").trim().to_string();
+                    let constraint_id = params.get(1).expect("").trim().parse::<usize>().expect("");
+                    let new_value = params.get(2).expect("").trim().to_string();
+                    AppCommands::Resize(layout_id, constraint_id, new_value)
+                },
+                "state" => {
+                    let state = params.get(0).expect("").trim().to_string();
+                    AppCommands::State(state)
+                },
+                "errot" => {
+                    let error_message = params.get(0).expect("").trim().to_string();
+                    AppCommands::Error(error_message)
+                }
+                "result" => {
+                    let result_message = params.get(0).expect("").trim().to_string();
+                    AppCommands::Result(result_message)
+                }
+                "set" => {
+                    let key = params.get(0).expect("").trim().to_string();
+                    let value =  params.get(1).expect("").trim().to_string();
+                    AppCommands::Set(key, Variant::from_string(&value, &Generic::Any))
+                }
+                "change" => {
+                    let key = params.get(0).expect("").trim().to_string();
+                    let value =  params.get(1).expect("").trim().to_string().parse::<i64>().expect("");
+                    AppCommands::Change(key, value)
+                }
+                _ => AppCommands::Undefined,
+            }
+        }
+        else{
+            let command: &str = &value.trim().to_lowercase();
+            
+            return match command{
+                "quit" => AppCommands::Quit,
+                _ => AppCommands::Undefined,
+            }
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub enum AppComponent{
     Categories,
     Tasks,
@@ -13,385 +83,208 @@ pub enum AppComponent{
     Timers,
 }
 
-#[derive(PartialEq, Clone, Copy)]
-pub enum AppState{
-    Main,
-    Categories,
-    CreateCategory,
-    DeleteCategory,
-    EditCategory,
-    Tasks,
-    CreateTask,
-    DeleteTask,
-    EditTask,
-    Milestones,
-    CreateMilestone,
-    DeletaMilestone,
-    EditMilestone,
-    Timers,
-    Save,
-    Exit,
-}
-
-#[derive(PartialEq, Clone, Copy)]
-pub enum AppEdit{
-    None,
-    Name,
-    Exp,
-    Date,
-}
-
+#[derive(Serialize, Deserialize, Debug)]
 pub struct AppConfig{
+    pub layouts: Vec<LayoutNode>,
+    pub states: Vec<String>,
+    pub keybinds: HashMap<String, HashMap<String, String>>,
+    pub widgets: Vec<WidgetData>,
+    pub styles: HashMap<String, StyleData>,
+    
+    pub values: HashMap<String, String>,
+
+    #[serde(default = "default_exp_power")]
     pub exp_power: f32,
 }
+pub fn default_exp_power() -> f32{0.85}
+
 impl AppConfig{
     pub fn new() -> Self{
         Self {
-            exp_power: 0.85
+            layouts: Vec::new(),
+            states: Vec::new(),
+            keybinds: HashMap::new(),
+            widgets: Vec::new(),
+            styles: HashMap::new(),
+            values: HashMap::new(),
+            exp_power: 0.85,
         }
     }
 }
 
 pub struct App{
     pub exit: bool,
-    pub state: AppState,
-    pub app_grid: Vec<Vec<AppComponent>>,
-    pub app_size: (usize, usize),
-    pub grid_cursor: (usize, usize),
-    pub cur_category: u32,
-    pub cur_task: u32,
-    pub cur_milestone: u32,
-    pub cur_timer: u32,
+    pub state: String,
+
     pub data: json_types::Data,
     pub app_config: AppConfig,
-    pub timers: Vec<Timer>,
-
+    //pub timers: Vec<Timer>,
+    
     pub theme: Theme,
     
     pub global_lvl: u32,
     pub global_exp: u32,
 
-    pub cur_edit: AppEdit,
-    pub edit_name: String,
-    pub edit_exp: String,
+    pub cur_edit: u32,
+    pub edit_data: Vec<String>,
 
     pub result_message: String,
     pub error_message: String,
+
+    pub additional_data: HashMap<String, Variant>
 }
 
 impl App{
     pub fn new() -> Self{
-        let app_grid: Vec<Vec<AppComponent>> = vec![
-            vec![AppComponent::Categories, AppComponent::Tasks],
-            vec![AppComponent::Categories, AppComponent::Milestones],
-            vec![AppComponent::Timers, AppComponent::Timers]
-        ];
-
         Self {
             exit: false,
-            state: AppState::Main,
-            app_grid,
-            app_size: (2, 3),
-            grid_cursor: (0, 0),
-            cur_category: 0,
-            cur_task: 0,
-            cur_milestone: 0,
-            cur_timer: 0,
+            state: String::new(),
             data: Data::new(),
             app_config: AppConfig::new(),
-            timers: Vec::new(),
-
             theme: Theme::dark_theme(),
-
             global_lvl: 0,
             global_exp: 0,
-
-            cur_edit: AppEdit::None,
-            edit_name: String::new(),
-            edit_exp: String::new(),
-
+            cur_edit: 0,
+            edit_data: Vec::new(),
             result_message: String::new(),
             error_message: String::new(),
+            additional_data: HashMap::new()
         }
     }
-    /*pub fn init(app_data: Vec<(AppComponent, (u32, u32), (u32, u32))>) -> Self{
-        
-    }*/
-
-    pub fn load_data(&mut self) -> io::Result<()>{
-        let mut file = File::open("data.json")?;
-        let mut content = String::new();
-        file.read_to_string(&mut content)?;
-
-        self.data = serde_json::from_str(&content)?;
-
-        Ok(())
-    }
-
-    pub fn save_data(&mut self) -> io::Result<()>{
-        while self.timers.len() > 0{
-            self.cur_timer = 0;
-            let _ = self.finish_timer();
-        }
-
-        let data: String = serde_json::to_string(&self.data)?;
-
-        let mut file = File::create("data.json")?;
-        file.write_all(data.as_bytes())?;
-
-        Ok(())
-    }
-
-    pub fn get_cur_component(&self) -> Option<&AppComponent>{
-        if let Some(inner_vec) = self.app_grid.get(self.grid_cursor.1) {
-            return inner_vec.get(self.grid_cursor.0);
-        }
-        None
-    }
-
-    pub fn get_component(&self, position: &(usize, usize)) -> Option<&AppComponent>{
-        if let Some(inner_vec) = self.app_grid.get(position.1) {
-            return inner_vec.get(position.0);
-        }
-        None
-    }
-
-    pub fn set_state(&mut self, state: AppState){
-        self.state = state;
-    }
-
-    pub fn save_category(&mut self) -> Result<(), ()>{
-        let name = self.edit_name.clone();
-        self.edit_name = String::new();
-        self.data.add_category(Category::init(&name))?;
-        
-        Ok(())
-    }
-    pub fn delete_category(&mut self) -> Result<(), ()>{
-        let _ = self.finish_timer_on_category_id();
-        self.data.remove_category(self.cur_category as usize)?;
-        self.cur_category = 0;
-        Ok(())
-    }
-    pub fn edit_category(&mut self) -> Result<(), ()>{
-        let name = self.edit_name.clone();
-        self.edit_name = String::new();
-        self.data.edit_category(self.cur_category as usize, name)?;
-        Ok(())
-    }
-    pub fn save_task(&mut self) -> Result<(), ()>{
-        if let Some(category) = self.data.get_category_mut(self.cur_category as usize){
-            let name = self.edit_name.clone();
-            if self.edit_exp.parse::<u32>().is_err(){
-                return Err(());
-            }
-            let exp: u32 = self.edit_exp.parse().unwrap();
-            self.edit_name = String::new();
-            self.edit_exp = String::new();
-
-            category.add_task(Task::init(name, exp))?;
-            return Ok(());
-        }
-        Err(())
-    }
-    pub fn finish_task(&mut self) -> Result<(), ()>{
-        if let Some(category) = self.data.get_category_mut(self.cur_category as usize){
-            if let Some(task) = category.get_task(self.cur_task as usize){
-                category.increase_exp(task.exp_reward, self.app_config.exp_power);
-                return Ok(())
-            }
-        }
-        Err(())
-    }
-    pub fn save_milestone(&mut self) -> Result<(), ()>{
-        if let Some(category) = self.data.get_category_mut(self.cur_category as usize){
-            let name = self.edit_name.clone();
-            if self.edit_exp.parse::<u32>().is_err(){
-                return Err(());
-            }
-            let exp: u32 = self.edit_exp.parse().unwrap();
-            self.edit_name = String::new();
-            self.edit_exp = String::new();
-
-            category.add_milestone(Milestone::init(name, exp))?;
-            return Ok(());
-        }
-        Err(())
-    }
-    pub fn finish_milestone(&mut self) -> Result<(), ()>{
-        if let Some(category) = self.data.get_category_mut(self.cur_category as usize){
-            if let Some(milestone) = category.get_milestone(self.cur_milestone as usize){
-                category.increase_exp(milestone.exp_reward, self.app_config.exp_power);
-                category.remove_milestone(self.cur_milestone as usize)?;
-                return Ok(())
-            }
-        }
-        Err(())
-    }
-
-    pub fn run_timer(&mut self) -> Result<(), ()>{
-        if let Some(category) = self.data.get_category(self.cur_category as usize){
-            for timer in self.timers.iter(){
-                if timer.category_id == category.get_uid(){
-                    self.error_message = "Timer for that category already exist".to_string();
-                    return Err(());
-                }
-            }
-            let timer = Timer::new(category);
-            self.timers.push(timer);
-            return Ok(());
-        }
-        Err(())
-    }
-
-    pub fn finish_timer(&mut self) -> Result<(), ()>{
-        if let Some(timer) = self.timers.get(self.cur_timer as usize){
-            for category in self.data.categories.iter_mut(){
-                if timer.category_id == category.get_uid(){
-                    category.increase_exp(timer.get_minutes(), self.app_config.exp_power);
-                    break;
-                }
-            }
-            self.timers.remove(self.cur_timer as usize);
-            return Ok(());
-        }
-        Err(())
-    }
-    pub fn finish_timer_on_category_id(&mut self) -> Result<(), ()>{
-        if let Some(category) = self.data.get_category_mut(self.cur_category as usize){
-            for (i, timer) in self.timers.iter().enumerate(){
-                if category.get_uid() == timer.category_id{
-                    category.increase_exp(timer.get_minutes(), self.app_config.exp_power);
-                    self.timers.remove(i as usize);
-                    return Ok(());
-                }
-            }
-        }
-        Err(())
-    }
-
-    pub fn move_cursor_up(&mut self){
-        let cur_component = self.get_cur_component().cloned();
-
-        for i in 1..self.app_size.1{
-            let position_y = (self.grid_cursor.1 + self.app_size.1 - i) % self.app_size.1;
-            
-            let new_position: (usize, usize) = (self.grid_cursor.0, position_y);
-            let should_move: bool = {
-                let new_component = self.get_component(&new_position).copied();
-                cur_component != new_component
-            };
-            
-            if should_move{
-                self.grid_cursor = new_position;
-                break;
-            }
-        }
-    }
-    pub fn move_cursor_down(&mut self){
-        let cur_component = self.get_cur_component().cloned();
-
-        for i in 1..self.app_size.1+1{
-            let position_y = (self.grid_cursor.1 + i) % self.app_size.1;
-            
-            let new_position: (usize, usize) = (self.grid_cursor.0, position_y);
-            let should_move: bool = {
-                let new_component = self.get_component(&new_position).cloned();
-                cur_component != new_component
-            };
-            
-            if should_move{
-                self.grid_cursor = new_position;
-                break; 
-            }
-        }
-    }
-    pub fn move_cursor_right(&mut self){
-        let cur_component = self.get_cur_component().cloned();
-
-        for i in 1..self.app_size.0{
-            let position_x = (self.grid_cursor.0 + i) % self.app_size.0;
-            
-            let new_position: (usize, usize) = (position_x, self.grid_cursor.1);
-            let should_move: bool = {
-                let new_component = self.get_component(&new_position).cloned();
-                cur_component != new_component
-            };
-            
-            if should_move{
-                self.grid_cursor = new_position;
-                break;
-            }
-        }
-    }
-    pub fn move_cursor_left(&mut self){
-        let cur_component = self.get_cur_component().cloned();
-
-        for i in 1..self.app_size.0+1{
-            let position_x = (self.grid_cursor.0 + self.app_size.0 - i) % self.app_size.0;
-            
-            let new_position: (usize, usize) = (position_x, self.grid_cursor.1);
-            let should_move: bool = {
-                let new_component = self.get_component(&new_position).cloned();
-                cur_component != new_component
-            };
-            
-            if should_move{
-                self.grid_cursor = new_position;
-                break;
-            }
+    pub fn init(&mut self){
+        for (key, value) in self.app_config.values.clone().into_iter(){
+            self.additional_data.insert(key, Variant::from_string(&value, &Generic::Any));
         }
     }
 
-    pub fn id_up(&mut self){
-        match self.state{
-            AppState::Categories => {
-                if self.data.categories.len() != 0{
-                    self.cur_category = (self.data.categories.len() as u32 + self.cur_category - 1) % self.data.categories.len() as u32;
-                }
+    pub fn run_command_string(&mut self, commands: String){
+        for command in commands.split(';'){
+            self.run_command(&AppCommands::from_str(command.to_string()));
+        }
+    }
+    pub fn run_command(&mut self, command: &AppCommands){
+        match command{
+            AppCommands::Quit => {
+                self.exit = true;
             },
-            AppState::Tasks => {
-                if let Some(category) = self.data.categories.get(self.cur_category as usize){
-                    self.cur_task = (category.tasks.len() as u32 + self.cur_task - 1) % category.tasks.len() as u32;
-                }
+            AppCommands::State(state) => {
+                self.set_state(state.to_string());
+            },
+            AppCommands::Toggle(widget_id) => {
+                self.toggle_widget(widget_id.to_string());
+            },
+            AppCommands::Resize(layout_id, constraint, new_value) => {
+                self.resize_constraint(layout_id.to_string(), *constraint, new_value.to_string());
+            },
+            AppCommands::Error(error_message) => {
+                self.error_message = error_message.to_string();
             }
-            AppState::Milestones => {
-                if let Some(category) = self.data.categories.get(self.cur_category as usize){
-                    self.cur_milestone = (category.milestones.len() as u32 + self.cur_milestone - 1) % category.milestones.len() as u32;
-                }
+            AppCommands::Result(result_message) => {
+                self.result_message = result_message.to_string();
             }
-            AppState::Timers => {
-                if self.timers.len() != 0{
-                    self.cur_timer = (self.timers.len() as u32 + self.cur_timer - 1) % self.data.categories.len() as u32;
-                }
+            AppCommands::Set(key, value) => {
+                self.set_data(key.to_string(), value.clone());
+            }
+            AppCommands::Change(key, value) => {
+                self.change_data(key.to_string(), *value);
             }
             _ => {}
         }
     }
 
-    pub fn id_down(&mut self){
-        match self.state{
-            AppState::Categories => {
-                if self.data.categories.len() != 0{
-                    self.cur_category = (self.cur_category + 1) % self.data.categories.len() as u32;
-                }
-            },
-            AppState::Tasks => {
-                if let Some(category) = self.data.categories.get(self.cur_category as usize){
-                    self.cur_task = (self.cur_task + 1) % category.tasks.len() as u32;
+    pub fn load_config(&mut self, config: AppConfig){
+        self.app_config = config;
+        self.state = self.app_config.states.first().expect("No states provided").to_string();
+    }
+
+    pub fn render_widgets(&mut self, frame: &mut Frame){
+        let layout_data: HashMap<String, Vec<Rect>> = to_layouts(&self.app_config.layouts, frame.area());
+
+        for widget in self.app_config.widgets.iter(){
+            if !widget.visible{
+                continue;
+            }
+            if let Some(widget_box) = widget.widget_type.to_widget(){
+                widget_box.render(frame, self, &layout_data, &widget);
+            }
+        }
+
+        if self.result_message != String::new(){
+            render_result(self, frame, 60, 40, frame.area());
+        }
+        if self.error_message != String::new(){
+            render_error(self, frame, 60, 40, frame.area());
+        }
+    }
+
+    pub fn set_data(&mut self, key: String, value: Variant){
+        if let Some(old_value) = self.additional_data.get(&key){
+            match old_value{
+                Variant::Int(old_int) => {
+                    match value{
+                        Variant::Int(new_int) => {
+                            self.additional_data.insert(key, Variant::from_string(&(old_int + new_int).to_string(), &Generic::Int));
+                        },
+                        _ => {}
+                    }
+                },
+                _ => {}
+            }
+        }
+        else{
+            self.additional_data.insert(key, value);
+        }
+    }
+    pub fn change_data(&mut self, key: String, value: i64){
+        if let Some(old_value) = self.additional_data.get(&key){
+            match old_value{
+                Variant::Int(old_int) => {
+                    self.additional_data.insert(key, Variant::from_string(&(old_int + value).to_string(), &Generic::Int));
+                },
+                _ => {}
+            }
+        }
+    }
+
+    pub fn resize_constraint(&mut self, layout_id: String, constraint: usize, new_value: String){
+        if let Ok(id) = layout_id.parse::<usize>(){
+            if let Some(layout) = self.app_config.layouts.get_mut(id){
+                if layout.constraints.len() < constraint{
+                    layout.constraints[constraint] = new_value;
                 }
             }
-            AppState::Milestones => {
-                if let Some(category) = self.data.categories.get(self.cur_category as usize){
-                    self.cur_milestone = (self.cur_milestone + 1) % category.milestones.len() as u32;
+        }
+        else{
+            for layout in self.app_config.layouts.iter_mut(){
+                if layout.id == layout_id{
+                    if layout.constraints.len() < constraint{
+                        layout.constraints[constraint] = new_value;
+                        break;
+                    }
                 }
             }
-            AppState::Timers => {
-                if self.timers.len() != 0{
-                    self.cur_timer = (self.cur_timer + 1) % self.data.categories.len() as u32;
+        }
+
+        
+    }
+    pub fn set_state(&mut self, state: String){
+        if self.app_config.states.contains(&state){
+            self.state = state;
+        }
+    }
+
+    pub fn toggle_widget(&mut self, widget_id: String){
+        if let Ok(id) = widget_id.parse::<usize>(){
+            if let Some(widget) = self.app_config.widgets.get_mut(id){
+                widget.visible = !widget.visible;
+            }
+        }
+        else{
+            for widget in self.app_config.widgets.iter_mut(){
+                if widget.id == widget_id{
+                    widget.visible = !widget.visible;
                 }
             }
-            _ => {}
         }
     }
 }
