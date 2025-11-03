@@ -8,10 +8,10 @@ Did you ever needed to do something, but you just couldn't motivate yourself to 
 Just run executable in terminal/console and read shortcuts at the bottom of the screen
 
 ## Configuration
-For now, there is no possible configuration of the program, but the goal is to allow for custom widget layout, cursom themes, and custom controlls
+Configuration using json file is greatly improved from base app version, but still lacks some key features of the app, and for now, the app is unusable, and doesn't allow for saving data. Currently only allow for placing widgets in layout and creating categories.
 
 ## How it looks
-> I cant show styles in readme. You need to trust me with that
+> layout can be different from what you see here (you can still make it look like this tho)
 ```
 
  ┌ Categories ────────────────────────────────────────────┐┌ Tasks ─────────────────────────────────────────────────┐
@@ -47,5 +47,27 @@ For now, there is no possible configuration of the program, but the goal is to a
  q Quit   s Save   Enter Select   Arrows Move
 
 ```
+
+## Roadmap
+- [x] Json customization
+- [x] Category widget
+- [x] Task widget
+- [x] Milestone widget
+- [ ] Timers widget
+- [x] Help widget
+- [ ] Image widget
+- [ ] User profile widget
+- [ ] Category preview
+- [ ] Task preview
+- [ ] Milestone preview
+- [ ] Category edit
+- [ ] Task edit
+- [ ] Milestone edit
+- [ ] Timer start
+- [ ] Increase exp
+- [ ] Save/Load data
+
+## Additional info
+Inspiration is from that video: "https://youtu.be/WJqu8fTd5Kk"
 
 > Thank you and have fun!
