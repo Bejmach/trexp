@@ -281,8 +281,14 @@ impl App{
 
     pub fn open_buffer(&mut self, name: String, mode: InputMode){
         self.input_mode = mode;
-        self.buffer_name = Some(name);
-        self.input_buffer = String::new();
+        self.buffer_name = Some(name.clone());
+        self.input_buffer = if let Some(Variant::Str(value)) = self.additional_data.get(&name){
+            value.to_string()
+        }else if let Some(Variant::Int(value)) = self.additional_data.get(&name){
+            value.to_string()
+        }else{
+            String::new()
+        };
     }
 
     pub fn close_buffer(&mut self){

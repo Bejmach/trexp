@@ -25,6 +25,8 @@ impl TrWidget for InputWidget{
             app.input_buffer.clone()
         }else if let Some(Variant::Str(value)) = app.additional_data.get(&self.value_name){
             value.to_string()
+        }else if let Some(Variant::Int(value)) = app.additional_data.get(&self.value_name){
+            value.to_string()
         }else{
             String::new()
         };
