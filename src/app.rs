@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use ratatui::{layout::Rect, Frame};
 use serde::{Deserialize, Serialize};
 
-use crate::{json_types::{self, Data}, layout_conf::{to_layouts, LayoutNode}, theme::{StyleData, Theme}, traits::tr_widget::TrWidget, ui::{render_error, render_result, widgets::WidgetData}, wild_type::{Generic, Variant}};
+use crate::{json_types::{self, Category, Data}, layout_conf::{to_layouts, LayoutNode}, theme::{StyleData, Theme}, traits::tr_widget::TrWidget, ui::{render_error, render_result, widgets::WidgetData}, wild_type::{Generic, Variant}};
 
 pub enum AppCommands{
     Undefined,
@@ -18,7 +18,9 @@ pub enum AppCommands{
     Change(String, i64),
     Remove(String),
     OpenBuffer(String, InputMode),
+    CloseBuffer,
     SaveBuffer,
+    AddCategory(String),
 }
 
 impl AppCommands{
@@ -73,6 +75,10 @@ impl AppCommands{
                     let mode = InputMode::from_str(params.get(1).expect("").to_string());
                     AppCommands::OpenBuffer(name, mode)
                 }
+                "addcategory" => {
+                    let name = params.get(0).expect("").trim().to_string();
+                    AppCommands::AddCategory(name)
+                }
                 _ => AppCommands::Undefined,
             }
         }
@@ -81,6 +87,7 @@ impl AppCommands{
             
             return match command{
                 "quit" => AppCommands::Quit,
+                "closebuffer" => AppCommands::CloseBuffer,
                 "savebuffer" => AppCommands::SaveBuffer,
                 _ => AppCommands::Undefined,
             }
@@ -97,10 +104,16 @@ pub enum AppComponent{
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct HelpData{
+    pub command: String,
+    pub info: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct AppConfig{
     pub layouts: Vec<LayoutNode>,
     pub states: Vec<String>,
-    pub keybinds: HashMap<String, HashMap<String, String>>,
+    pub keybinds: HashMap<String, HashMap<String, HelpData>>,
     pub widgets: Vec<WidgetData>,
     pub styles: HashMap<String, StyleData>,
     
@@ -228,8 +241,14 @@ impl App{
             AppCommands::OpenBuffer(name, mode) => {
                 self.open_buffer(name.to_string(), mode.clone());
             }
+            AppCommands::CloseBuffer => {
+                self.close_buffer();
+            }
             AppCommands::SaveBuffer => {
                 self.save_buffer();
+            }
+            AppCommands::AddCategory(name) => {
+                self.add_category(name.to_string());
             }
             _ => {}
         }
@@ -261,18 +280,56 @@ impl App{
     }
 
     pub fn open_buffer(&mut self, name: String, mode: InputMode){
-        self.input_mode = Some(mode);
+        self.input_mode = mode;
         self.buffer_name = Some(name);
         self.input_buffer = String::new();
     }
 
+    pub fn close_buffer(&mut self){
+        self.input_mode = InputMode::Undefined;
+        self.buffer_name = None;
+        self.input_buffer = String::new();
+    }
+
     pub fn save_buffer(&mut self){
-        if let Some(mode) = &self.input_mode && let Some(name) = &self.buffer_name{
-            match mode{
+        if let Some(name) = &self.buffer_name{
+            match self.input_mode{
                 InputMode::Number => self.set_data(name.to_string(), Variant::from_string(&self.input_buffer, &Generic::Int)),
                 InputMode::Text => self.set_data(name.to_string(), Variant::from_string(&self.input_buffer, &Generic::Str)),
                 _ => {}
             }
+        }
+    }
+
+    pub fn add_category(&mut self, name: String){
+        if name.starts_with("$"){
+            let name = name[1..].to_string();
+            if Some(name.clone()) == self.buffer_name{
+                for category in self.data.categories.iter(){
+                    if category.name == self.input_buffer{
+                        self.error_message = "Category already exist".to_string();
+                        return;
+                    }
+                }
+                let _ = self.data.add_category(Category::init(&self.input_buffer));
+                self.result_message = "Category succesfully added".to_string();
+            }
+            else if let Some(Variant::Str(value)) = self.additional_data.get(&name){
+                for category in self.data.categories.iter(){
+                    if category.name == *value{
+                        self.error_message = "Category already exist".to_string();
+                        return;
+                    }
+                }
+                let _ = self.data.add_category(Category::init(value));
+                self.result_message = "Category succesfully added".to_string();
+            }
+            else{
+                self.error_message = "Couldn't add category".to_string();
+            }
+        }
+        else{
+            self.error_message = "Category name needs to be a param, not literal".to_string();
         }
     }
 

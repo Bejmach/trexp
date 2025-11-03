@@ -18,60 +18,67 @@
 			"parent": "widgets.1"
 		}
 	],
-	"states": ["CategoriesFocus", "CategoriesActive", "TasksFocus", "TasksActive", "MilestonesFocus", "MilestonesActive", "HelpPreview"],
+	"states": ["CategoriesFocus", "CategoriesActive", "CategoriesCreate", "TasksFocus", "TasksActive", "MilestonesFocus", "MilestonesActive", "HelpPreview"],
 	"keybinds": {
 		"CategoriesFocus": {
-			"Enter": "State(CategoriesActive)",
-			"Right": "State(TasksFocus)",
-			"Left": "State(TasksFocus)",
-			"C(q)": "quit",
-			"C(h)": "Set(last_state, CategoriesFocus);State(HelpPreview);Toggle(help)"
+			"Enter": {"command": "State(CategoriesActive)", "info": "enter categories"},
+			"Right": {"command": "State(TasksFocus)", "info": "move focus to tasks"},
+			"Left": {"command": "State(TasksFocus)", "info": "move focus to tasks"},
+			"C(q)": {"command": "quit", "info": "quit application"},
+			"C(h)": {"command": "Set(last_state, CategoriesFocus);State(HelpPreview);Toggle(help)", "info": "open help view"}
 		},
 		"CategoriesActive": {
-			"Esc": "State(CategoriesFocus)",
-			"Enter": "Result(adding categories not yet supported)",
-			"Down": "Change(category_id, 1)",
-			"Up": "Change(category_id, -1)",
-			"C(q)": "State(CategoriesFocus)",
-			"C(h)": "Set(last_state, CategoriesActive);State(HelpPreview);Toggle(help)"
+			"Esc": {"command": "State(CategoriesFocus)", "info": "return to categories focus"},
+			"Enter": {"command": "Result(category preview not yet supported)", "info": "attempt category preview"},
+			"Down": {"command": "Change(category_id, 1)", "info": "move selection down"},
+			"Up": {"command": "Change(category_id, -1)", "info": "move selection up"},
+			"C(q)": {"command": "State(CategoriesFocus)", "info": "exit active state"},
+			"C(n)": {"command": "OpenBuffer(category_name, text);Toggle(category_create);State(CategoriesCreate)", "info": "create new category"},
+			"C(h)": {"command": "Set(last_state, CategoriesActive);State(HelpPreview);Toggle(help)", "info": "open help view"}
+		},
+		"CategoriesCreate": {
+			"Esc": {"command": "CloseBuffer;State(CategoriesActive);Toggle(category_create)", "info": "cancel category creation"},
+			"Enter": {"command": "AddCategory($category_name);CloseBuffer;State(CategoriesActive);Toggle(category_create)", "info": "attempt to create category"},
+			"C(q)": {"command": "CloseBuffer;State(CategoriesActive);Toggle(category_create)", "info": "exit to categories"},
+			"C(h)": {"command": "Set(last_state, CategoriesCreate);State(HelpPreview);Toggle(help)", "info": "open help view"}
 		},
 		"TasksFocus": {
-			"Enter": "State(TasksActive)",
-			"Right": "State(CategoriesFocus)",
-			"Left": "State(CategoriesFocus)",
-			"Down": "State(MilestonesFocus)",
-			"Up": "State(MilestonesFocus)",
-			"C(q)": "quit",
-			"C(h)": "Set(last_state, TasksFocus);State(HelpPreview);Toggle(help)"	
+			"Enter": {"command": "State(TasksActive)", "info": "enter tasks view"},
+			"Right": {"command": "State(CategoriesFocus)", "info": "move focus to categories"},
+			"Left": {"command": "State(CategoriesFocus)", "info": "move focus to categories"},
+			"Down": {"command": "State(MilestonesFocus)", "info": "move focus to milestones"},
+			"Up": {"command": "State(MilestonesFocus)", "info": "move focus to milestones"},
+			"C(q)": {"command": "quit", "info": "quit application"},
+			"C(h)": {"command": "Set(last_state, TasksFocus);State(HelpPreview);Toggle(help)", "info": "open help view"}
 		},
 		"TasksActive": {
-			"Esc": "State(TasksFocus)",
-			"Enter": "Result(adding tasks not yet supported)",
-			"Down": "Change(task_id, 1)",
-			"Up": "Change(task_id, -1)",
-			"C(q)": "State(TasksFocus)",
-			"C(h)": "Set(last_state, TasksActive);State(HelpPreview);Toggle(help)"
+			"Esc": {"command": "State(TasksFocus)", "info": "return to tasks focus"},
+			"Enter": {"command": "Result(adding tasks not yet supported)", "info": "attempt to add task"},
+			"Down": {"command": "Change(task_id, 1)", "info": "move selection down"},
+			"Up": {"command": "Change(task_id, -1)", "info": "move selection up"},
+			"C(q)": {"command": "State(TasksFocus)", "info": "exit active state"},
+			"C(h)": {"command": "Set(last_state, TasksActive);State(HelpPreview);Toggle(help)", "info": "open help view"}
 		},
 		"MilestonesFocus": {
-			"Enter": "State(MilestonesActive)",
-			"Right": "State(CategoriesFocus)",
-			"Left": "State(CategoriesFocus)",
-			"Down": "State(TasksFocus)",
-			"Up": "State(TasksFocus)",
-			"C(q)": "quit",
-			"C(h)": "Set(last_state, MilestonesFocus);State(HelpPreview);Toggle(help)"
+			"Enter": {"command": "State(MilestonesActive)", "info": "enter milestones view"},
+			"Right": {"command": "State(CategoriesFocus)", "info": "move focus to categories"},
+			"Left": {"command": "State(CategoriesFocus)", "info": "move focus to categories"},
+			"Down": {"command": "State(TasksFocus)", "info": "move focus to tasks"},
+			"Up": {"command": "State(TasksFocus)", "info": "move focus to tasks"},
+			"C(q)": {"command": "quit", "info": "quit application"},
+			"C(h)": {"command": "Set(last_state, MilestonesFocus);State(HelpPreview);Toggle(help)", "info": "open help view"}
 		},
 		"MilestonesActive": {
-			"Esc": "State(MilestonesFocus)",
-			"Enter": "Result(adding milestones not yet supported)",
-			"Down": "Change(milestone_id, 1)",
-			"Up": "Change(milestone_id, -1)",
-			"C(q)": "State(MilestonesFocus)",
-			"C(h)": "Set(last_state, MilestonesActive);State(HelpPreview);Toggle(help)"
+			"Esc": {"command": "State(MilestonesFocus)", "info": "return to milestones focus"},
+			"Enter": {"command": "Result(adding milestones not yet supported)", "info": "attempt to add milestone"},
+			"Down": {"command": "Change(milestone_id, 1)", "info": "move selection down"},
+			"Up": {"command": "Change(milestone_id, -1)", "info": "move selection up"},
+			"C(q)": {"command": "State(MilestonesFocus)", "info": "exit active state"},
+			"C(h)": {"command": "Set(last_state, MilestonesActive);State(HelpPreview);Toggle(help)", "info": "open help view"}
 		},
 		"HelpPreview": {
-			"Esc": "State($last_state);Toggle(help)",
-			"C(q)": "State($last_state);Toggle(help)"	
+			"Esc": {"command": "State($last_state);Toggle(help)", "info": "close help and return"},
+			"C(q)": {"command": "State($last_state);Toggle(help)", "info": "close help and return"}
 		}
 	},
 	"styles": {
@@ -95,6 +102,7 @@
 			"constraint": 0,
 			"styles": {
 				"CategoriesActive": "active",
+				"CategoriesCreate": "active",
 				"CategoriesFocus": "focus",
 				"_": "passive"
 			}
@@ -118,6 +126,18 @@
 				"MilestonesFocus": "focus",
 				"_": "passive"
 			}
+		},
+		{
+			"widget_type": {"Input": {"buffer_name": "category_name"}},
+			"id": "category_create",
+			"layout": "frame",
+			"constraint": 0,
+			"styles": {
+				"CategoriesCreate": "active",
+				"_": "passive"
+			},
+			"constraint_fit": {"Centered": {"percent_x": 30, "percent_y": 20}},
+			"visible": false
 		},
 		{
 			"widget_type": "Help",

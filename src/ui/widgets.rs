@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{traits::tr_widget::TrWidget, ui::{categories::CategoriesWidget, help::HelpWidget, milestones::MilestoneWidget, tasks::TaskWidget}, wild_type::Variant};
+use crate::{traits::tr_widget::TrWidget, ui::{categories::CategoriesWidget, help::HelpWidget, input::InputWidget, milestones::MilestoneWidget, tasks::TaskWidget}, wild_type::Variant};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum WidgetTypes{
@@ -11,6 +11,7 @@ pub enum WidgetTypes{
     Milestones,
     Timers,
     Help,
+    Input {buffer_name: String},
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -26,6 +27,7 @@ impl WidgetTypes{
             WidgetTypes::Tasks => Some(Box::new(TaskWidget::new())),
             WidgetTypes::Milestones => Some(Box::new(MilestoneWidget::new())),
             WidgetTypes::Help => Some(Box::new(HelpWidget::new())),
+            WidgetTypes::Input {buffer_name} => Some(Box::new(InputWidget::new(buffer_name.to_string()))),
             _ => None
         }
     }

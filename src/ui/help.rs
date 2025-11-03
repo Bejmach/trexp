@@ -33,8 +33,8 @@ impl TrWidget for HelpWidget{
             &HashMap::new()
         };
 
-        for (key, command) in keybinds {
-            counter += key.chars().count() as u16 + command.chars().count() as u16 + 4;
+        for (key, help_data) in keybinds {
+            counter += key.chars().count() as u16 + help_data.info.chars().count() as u16 + 4;
             if counter >= max_width {
                 line_vec.push(Line::from(span_vec.clone()));
                 span_vec.clear();
@@ -43,7 +43,7 @@ impl TrWidget for HelpWidget{
             span_vec.append(&mut vec![
                 Span::styled(key, key_style),
                 Span::raw(" "),
-                Span::styled(command, command_style),
+                Span::styled(help_data.info.clone(), command_style),
                 Span::raw("   ")
             ]);
         }

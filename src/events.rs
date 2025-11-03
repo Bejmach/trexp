@@ -19,7 +19,7 @@ pub fn handle_events(app: &mut App, timeout: Duration) -> io::Result<()>{
 fn handle_key_event(app: &mut App, key_event: KeyEvent){
     if app.error_message != String::new() || app.result_message != String::new() {
         match key_event.code {
-            KeyCode::Char('q') => {
+            KeyCode::Char('q') | KeyCode::Enter | KeyCode::Esc => {
                 app.error_message = String::new();
                 app.result_message = String::new();
             },
@@ -42,18 +42,21 @@ fn handle_key_event(app: &mut App, key_event: KeyEvent){
                     _ => {}
                 }
             }
+            KeyCode::Backspace => {
+                app.input_buffer.pop();
+            }
             _ => {
                 let key_str = key_event_to_string(key_event);
-                if let Some(command) = event_config.get(&key_str){
-                    app.run_command_string(command.to_string());
+                if let Some(help_data) = event_config.get(&key_str){
+                    app.run_command_string(help_data.command.to_string());
                 }
             }
         }
     }
     else if let Some(event_config) = app.app_config.keybinds.get(&app.state){
         let key_str = key_event_to_string(key_event);
-        if let Some(command) = event_config.get(&key_str){
-            app.run_command_string(command.to_string());
+        if let Some(help_data) = event_config.get(&key_str){
+            app.run_command_string(help_data.command.to_string());
         }
     }
 }

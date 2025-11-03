@@ -3,6 +3,8 @@ use std::{collections::HashMap};
 use ratatui::{layout::{Constraint, Direction, Layout, Rect}};
 use serde::{Deserialize, Serialize};
 
+use crate::ui::{centered_rect, widgets::ConstraintFit};
+
 #[derive(Serialize, Deserialize, Debug)]
 pub enum LayoutDirection{
     Horizontal,
@@ -26,6 +28,9 @@ pub struct LayoutNode{
     #[serde(default = "default_margin")]
     pub margin: u16,
     pub constraints: Vec<String>,
+
+    #[serde(default = "default_fit")]
+    pub constraint_fit: ConstraintFit,
     
     #[serde(default = "default_parent")]
     pub parent: String,
@@ -34,6 +39,7 @@ pub struct LayoutNode{
 fn default_margin() -> u16{0}
 fn default_visible() -> bool{true}
 fn default_parent() -> String{String::new()}
+fn default_fit() -> ConstraintFit{ConstraintFit::Default}
 
 pub fn get_area(layout_data: &HashMap<String, Vec<Rect>>, raw_value: String) -> &Rect{
     if let Some(data) = raw_value.split_once(".") {
@@ -77,9 +83,19 @@ pub fn to_layouts(layout_nodes: &Vec<LayoutNode>, frame_area: Rect) -> HashMap<S
 
     for layout in layout_nodes.iter(){
         let split_area: &Rect = if layout.parent == String::new(){
-            &frame_area
+            if let ConstraintFit::Centered { percent_x, percent_y } = layout.constraint_fit{
+                &centered_rect(percent_x, percent_y, frame_area)
+            }
+            else{
+                &frame_area
+            }
         }else{
-            get_area(&layout_data, layout.parent.to_string())
+            if let ConstraintFit::Centered { percent_x, percent_y } = layout.constraint_fit{
+                &centered_rect(percent_x, percent_y, *get_area(&layout_data, layout.parent.to_string()))
+            }
+            else{
+                get_area(&layout_data, layout.parent.to_string())
+            }
         };
 
         let rect_vec = Layout::default()

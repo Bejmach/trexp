@@ -4,6 +4,7 @@ pub mod gauge;
 pub mod widgets;
 pub mod help;
 pub mod milestones;
+pub mod input;
 
 
 use ratatui::{layout::{Constraint, Direction, Layout, Rect}, symbols::border, widgets::{Block, Clear, Padding, Paragraph}, Frame};
