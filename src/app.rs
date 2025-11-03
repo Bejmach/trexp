@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use ratatui::{layout::Rect, Frame};
 use serde::{Deserialize, Serialize};
 
-use crate::{json_types::{self, Category, Data, Task}, layout_conf::{to_layouts, LayoutNode}, theme::{StyleData, Theme}, traits::tr_widget::TrWidget, ui::{render_error, render_result, widgets::{variant_id_to_usize, WidgetData}}, wild_type::{Generic, Variant}};
+use crate::{json_types::{self, Category, Data, Milestone, Task}, layout_conf::{to_layouts, LayoutNode}, theme::{StyleData, Theme}, traits::tr_widget::TrWidget, ui::{render_error, render_result, widgets::{variant_id_to_usize, WidgetData}}, wild_type::{Generic, Variant}};
 
 pub enum AppCommands{
     Undefined,
@@ -22,6 +22,9 @@ pub enum AppCommands{
     SaveBuffer,
     AddCategory(String),
     AddTask(String, String),
+    AddMilestone(String, String),
+    CompleteTask,
+    CompleteMilestone,
 }
 
 impl AppCommands{
@@ -85,6 +88,11 @@ impl AppCommands{
                     let value =  params.get(1).expect("").trim().to_string();
                     AppCommands::AddTask(name, value)
                 }
+                "addmilestone" => {
+                    let name = params.get(0).expect("").trim().to_string();
+                    let value =  params.get(1).expect("").trim().to_string();
+                    AppCommands::AddMilestone(name, value)
+                }
                 _ => AppCommands::Undefined,
             }
         }
@@ -95,6 +103,8 @@ impl AppCommands{
                 "quit" => AppCommands::Quit,
                 "closebuffer" => AppCommands::CloseBuffer,
                 "savebuffer" => AppCommands::SaveBuffer,
+                "completetask" => AppCommands::CompleteTask,
+                "completemilestone" => AppCommands::CompleteMilestone,
                 _ => AppCommands::Undefined,
             }
         }
@@ -259,6 +269,15 @@ impl App{
             AppCommands::AddTask(name, value) => {
                 self.add_task(name.to_string(), value.to_string());
             }
+            AppCommands::AddMilestone(name, value) => {
+                self.add_milestone(name.to_string(), value.to_string());
+            }
+            AppCommands::CompleteTask => {
+                self.complete_task();
+            }
+            AppCommands::CompleteMilestone => {
+                self.complete_milestone();
+            }
             _ => {}
         }
     }
@@ -400,6 +419,85 @@ impl App{
         }
     }
 
+    pub fn add_milestone(&mut self, name: String, value: String){
+        if name.starts_with("$") && value.starts_with("$") && let Some(category_id) = self.additional_data.get("category_id"){
+            let name = name[1..].to_string();
+            let value = value[1..].to_string();
+ 
+            if let Some(category_id) = variant_id_to_usize(category_id, self.data.categories.len()){
+                let milestone_name: Option<String> = if Some(name.clone()) == self.buffer_name{
+                    Some(self.input_buffer.to_string())
+                }else if let Some(Variant::Str(value)) = self.additional_data.get(&name){
+                    Some(value.to_string())
+                }else{
+                    self.error_message = "Cant get milestone name".to_string();
+                    None
+                };
+                
+                let milestone_exp: Option<u32> = if Some(value.clone()) == self.buffer_name{
+                    Some(self.input_buffer.parse::<u32>().expect(""))
+                }else if let Some(Variant::Int(value)) = self.additional_data.get(&value){
+                    Some(*value as u32)
+                }else{
+                    self.error_message = "Cant get milestone exp".to_string();
+                    None
+                };
+
+                if let Some(category) = self.data.get_category_mut(category_id) && let Some(milestone_name) = milestone_name && let Some(milestone_exp) = milestone_exp{
+                    for milestone in category.milestones.iter(){
+                        if milestone.name == milestone_name{
+                            self.error_message = "Milestone already exist".to_string();
+                            return;
+                        }
+                    }
+
+                    let _ = category.add_milestone(Milestone::init(milestone_name, milestone_exp));
+                    self.result_message = "Milestone succesfully added".to_string();
+                    return;
+                }
+                else{
+                    if self.error_message == String::new(){
+                        self.error_message = "cant get category".to_string();
+                    }
+                    return;
+                }
+            }
+            else{
+                self.error_message = "No category with id".to_string();
+            }
+        }
+        else{
+            self.error_message = "Fix configs".to_string();
+        }
+    }
+
+    pub fn complete_task(&mut self){
+        if let Some(task_id) = self.additional_data.get("task_id") && let Some(category_id) = self.additional_data.get("category_id"){
+            if let Variant::Int(task_id) = task_id && let Some(category_id) = variant_id_to_usize(category_id, self.data.categories.len()){ 
+                if let Some(category) = self.data.get_category_mut(category_id){
+                    if let Some(task) = category.get_task(*task_id as usize){
+                        category.increase_exp(task.exp_reward, self.app_config.exp_power);
+                        self.set_data("task_id".to_string(), Variant::Int(0));
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn complete_milestone(&mut self){
+        if let Some(milestone_id) = self.additional_data.get("milestone_id") && let Some(category_id) = self.additional_data.get("category_id"){
+            if let Variant::Int(milestone_id) = milestone_id && let Some(category_id) = variant_id_to_usize(category_id, self.data.categories.len()){ 
+                if let Some(category) = self.data.get_category_mut(category_id){
+                    if let Some(milestone) = category.get_milestone(*milestone_id as usize){
+                        category.increase_exp(milestone.exp_reward, self.app_config.exp_power);
+                        let _ = category.remove_milestone(*milestone_id as usize);
+                        self.set_data("milestone_id".to_string(), Variant::Int(0));
+                    }
+                }
+            }
+        }
+    }
+
     pub fn set_data(&mut self, key: String, value: Variant){
         self.additional_data.insert(key, value);
     }
@@ -411,6 +509,9 @@ impl App{
                 },
                 _ => {}
             }
+        }
+        else{
+            self.additional_data.insert(key, Variant::from_string(&value.to_string(), &Generic::Int));
         }
     }
     pub fn remove_data(&mut self, key: String){

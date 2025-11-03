@@ -26,16 +26,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     app.load_config(serde_json::from_str(&data).expect("couldnt parse data"));
     app.init();
 
-    app.data.add_category(Category::init("test"));
-    app.data.add_category(Category::init("test2"));
-
     run_app(&mut terminal, &mut app)?;
 
     Ok(())
 }
 
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<(), io::Error>{
-    let tick_rate = Duration::from_secs(1);
+    let tick_rate = Duration::from_secs_f64(0.25);
     let mut last_tick = Instant::now();
 
     while !app.exit{

@@ -24,7 +24,7 @@
 			"constraint_fit": {"Centered": {"percent_y": 30, "percent_x": 50}}
 		}
 	],
-	"states": ["CategoriesFocus", "CategoriesActive", "CategoriesCreate", "TasksFocus", "TasksActive", "TaskCreateName", "TaskCreateExp", "MilestonesFocus", "MilestonesActive", "HelpPreview"],
+	"states": ["CategoriesFocus", "CategoriesActive", "CategoriesCreate", "TasksFocus", "TasksActive", "TaskCreateName", "TaskCreateExp", "MilestonesFocus", "MilestonesActive", "MilestoneCreateName", "MilestoneCreateExp", "HelpPreview"],
 	"keybinds": {
 		"CategoriesFocus": {
 			"Enter": {"command": "State(CategoriesActive)", "info": "enter categories"},
@@ -64,7 +64,8 @@
 			"Up": {"command": "Change(task_id, -1)", "info": "move selection up"},
 			"C(q)": {"command": "State(TasksFocus)", "info": "exit active state"},
 			"C(n)": {"command": "Toggle(task_create);State(TaskCreateName);OpenBuffer(task_name, text)", "info": "create new task"},
-			"C(h)": {"command": "Set(last_state, TasksActive);State(HelpPreview);Toggle(help)", "info": "open help view"}
+			"C(h)": {"command": "Set(last_state, TasksActive);State(HelpPreview);Toggle(help)", "info": "open help view"},
+			"C(f)": {"command": "CompleteTask", "info": "complete task"}
 		},
 		"TaskCreateName": {
 			"Right": {"command": "SaveBuffer;State(TaskCreateExp);OpenBuffer(task_exp, number)", "info": "edit exp"},
@@ -93,8 +94,21 @@
 			"Down": {"command": "Change(milestone_id, 1)", "info": "move selection down"},
 			"Up": {"command": "Change(milestone_id, -1)", "info": "move selection up"},
 			"C(q)": {"command": "State(MilestonesFocus)", "info": "exit active state"},
-			"C(h)": {"command": "Set(last_state, MilestonesActive);State(HelpPreview);Toggle(help)", "info": "open help view"}
+			"C(n)": {"command": "Toggle(milestone_create);State(MilestoneCreateName);OpenBuffer(milestone_name, text)", "info": "create new milestone"},
+			"C(h)": {"command": "Set(last_state, MilestonesActive);State(HelpPreview);Toggle(help)", "info": "open help view"},
+			"C(f)": {"command": "CompleteMilestone", "info": "complete milestone"}
 		},
+		"MilestoneCreateName": {
+			"Right": {"command": "SaveBuffer;State(MilestoneCreateExp);OpenBuffer(milestone_exp, number)", "info": "edit exp"},
+			"Left": {"command": "SaveBuffer;State(MilestoneCreateExp);OpenBuffer(milestone_exp, number)", "info": "edit exp"},
+			"Enter": {"command": "AddMilestone($milestone_name, $milestone_exp);Remove(milestone_name);Remove(milestone_exp);CloseBuffer;Toggle(milestone_create);State(MilestonesActive)", "info": "save milestone"},
+			"Esc": {"command": "Remove(milestone_name);Remove(milestone_exp);CloseBuffer;Toggle(milestone_create);State(MilestonesActive)", "info": "quit milestone creation"}
+		},
+		"MilestoneCreateExp": {
+			"Right": {"command": "SaveBuffer;State(MilestoneCreateName);OpenBuffer(milestone_name, text)", "info": "edit name"},
+			"Left": {"command": "SaveBuffer;State(MilestoneCreateName);OpenBuffer(milestone_name, text)", "info": "edit name"},
+			"Enter": {"command": "AddMilestone($milestone_name, $milestone_exp);Remove(milestone_name);Remove(milestone_exp);CloseBuffer;Toggle(milestone_create);State(MilestonesActive)", "info": "save milestone"},
+			"Esc": {"command": "Remove(milestone_name);Remove(milestone_exp);CloseBuffer;Toggle(milestone_create);State(MilestonesActive)", "info": "quit milestone creation"}		},
 		"HelpPreview": {
 			"Esc": {"command": "State($last_state);Toggle(help)", "info": "close help and return"},
 			"C(q)": {"command": "State($last_state);Toggle(help)", "info": "close help and return"}
@@ -181,7 +195,31 @@
 				"_": "passive"
 			},
 			"visible": false
-		},	
+		},
+		{
+			"widget_type": {"Input": {"buffer_name": "milestone_name"}},
+			"id": "milestone_create",
+			"layout": "create_task",
+			"constraint": 0,
+			"styles": {
+				"MilestoneCreateName": "active",
+				"MilestoneCreateExp": "focus",
+				"_": "passive"
+			},
+			"visible": false
+		},
+		{
+			"widget_type": {"Input": {"buffer_name": "milestone_exp"}},
+			"id": "milestone_create",
+			"layout": "create_task",
+			"constraint": 1,
+			"styles": {
+				"MilestoneCreateExp": "active",
+				"MilestoneCreateName": "focus",
+				"_": "passive"
+			},
+			"visible": false
+		},
 		{
 			"widget_type": "Help",
 			"id": "help",
