@@ -69,13 +69,13 @@
 		"TaskCreateName": {
 			"Right": {"command": "SaveBuffer;State(TaskCreateExp);OpenBuffer(task_exp, number)", "info": "edit exp"},
 			"Left": {"command": "SaveBuffer;State(TaskCreateExp);OpenBuffer(task_exp, number)", "info": "edit exp"},
-			"Enter": {"command": "AddTask($task_name, $task_id);Remove(task_name);Remove(task_exp);CloseBuffer;Toggle(task_create);State(TasksActive)", "info": "save task"},
+			"Enter": {"command": "AddTask($task_name, $task_exp);Remove(task_name);Remove(task_exp);CloseBuffer;Toggle(task_create);State(TasksActive)", "info": "save task"},
 			"Esc": {"command": "Remove(task_name);Remove(task_exp);CloseBuffer;Toggle(task_create);State(TasksActive)", "info": "quit task creation"}
 		},
 		"TaskCreateExp": {
 			"Right": {"command": "SaveBuffer;State(TaskCreateName);OpenBuffer(task_name, text)", "info": "edit name"},
 			"Left": {"command": "SaveBuffer;State(TaskCreateName);OpenBuffer(task_name, text)", "info": "edit name"},
-			"Enter": {"command": "AddTask($task_name, $task_id);Remove(task_name);Remove(task_exp);CloseBuffer;Toggle(task_create);State(TasksActive)", "info": "save task"},
+			"Enter": {"command": "AddTask($task_name, $task_exp);Remove(task_name);Remove(task_exp);CloseBuffer;Toggle(task_create);State(TasksActive)", "info": "save task"},
 			"Esc": {"command": "Remove(task_name);Remove(task_exp);CloseBuffer;Toggle(task_create);State(TasksActive)", "info": "quit task creation"}
 		},
 		"MilestonesFocus": {

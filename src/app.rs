@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use ratatui::{layout::Rect, Frame};
 use serde::{Deserialize, Serialize};
 
-use crate::{json_types::{self, Category, Data}, layout_conf::{to_layouts, LayoutNode}, theme::{StyleData, Theme}, traits::tr_widget::TrWidget, ui::{render_error, render_result, widgets::WidgetData}, wild_type::{Generic, Variant}};
+use crate::{json_types::{self, Category, Data, Task}, layout_conf::{to_layouts, LayoutNode}, theme::{StyleData, Theme}, traits::tr_widget::TrWidget, ui::{render_error, render_result, widgets::{variant_id_to_usize, WidgetData}}, wild_type::{Generic, Variant}};
 
 pub enum AppCommands{
     Undefined,
@@ -21,6 +21,7 @@ pub enum AppCommands{
     CloseBuffer,
     SaveBuffer,
     AddCategory(String),
+    AddTask(String, String),
 }
 
 impl AppCommands{
@@ -78,6 +79,11 @@ impl AppCommands{
                 "addcategory" => {
                     let name = params.get(0).expect("").trim().to_string();
                     AppCommands::AddCategory(name)
+                }
+                "addtask" => {
+                    let name = params.get(0).expect("").trim().to_string();
+                    let value =  params.get(1).expect("").trim().to_string();
+                    AppCommands::AddTask(name, value)
                 }
                 _ => AppCommands::Undefined,
             }
@@ -250,6 +256,9 @@ impl App{
             AppCommands::AddCategory(name) => {
                 self.add_category(name.to_string());
             }
+            AppCommands::AddTask(name, value) => {
+                self.add_task(name.to_string(), value.to_string());
+            }
             _ => {}
         }
     }
@@ -336,6 +345,58 @@ impl App{
         }
         else{
             self.error_message = "Category name needs to be a param, not literal".to_string();
+        }
+    }
+
+    pub fn add_task(&mut self, name: String, value: String){
+        if name.starts_with("$") && value.starts_with("$") && let Some(category_id) = self.additional_data.get("category_id"){
+            let name = name[1..].to_string();
+            let value = value[1..].to_string();
+ 
+            if let Some(category_id) = variant_id_to_usize(category_id, self.data.categories.len()){
+                let task_name: Option<String> = if Some(name.clone()) == self.buffer_name{
+                    Some(self.input_buffer.to_string())
+                }else if let Some(Variant::Str(value)) = self.additional_data.get(&name){
+                    Some(value.to_string())
+                }else{
+                    self.error_message = "Cant get task name".to_string();
+                    None
+                };
+                
+                let task_exp: Option<u32> = if Some(value.clone()) == self.buffer_name{
+                    Some(self.input_buffer.parse::<u32>().expect(""))
+                }else if let Some(Variant::Int(value)) = self.additional_data.get(&value){
+                    Some(*value as u32)
+                }else{
+                    self.error_message = "Cant get task exp".to_string();
+                    None
+                };
+
+                if let Some(category) = self.data.get_category_mut(category_id) && let Some(task_name) = task_name && let Some(task_exp) = task_exp{
+                    for task in category.tasks.iter(){
+                        if task.name == task_name{
+                            self.error_message = "Task already exist".to_string();
+                            return;
+                        }
+                    }
+
+                    let _ = category.add_task(Task::init(task_name, task_exp));
+                    self.result_message = "Task succesfully added".to_string();
+                    return;
+                }
+                else{
+                    if self.error_message == String::new(){
+                        self.error_message = "cant get category".to_string();
+                    }
+                    return;
+                }
+            }
+            else{
+                self.error_message = "No category with id".to_string();
+            }
+        }
+        else{
+            self.error_message = "Fix configs".to_string();
         }
     }
 
