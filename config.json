@@ -24,12 +24,14 @@
 			"constraint_fit": {"Centered": {"percent_y": 30, "percent_x": 50}}
 		}
 	],
-	"states": ["CategoriesFocus", "CategoriesActive", "CategoriesCreate", "TasksFocus", "TasksActive", "TaskCreateName", "TaskCreateExp", "MilestonesFocus", "MilestonesActive", "MilestoneCreateName", "MilestoneCreateExp", "HelpPreview"],
+	"states": ["CategoriesFocus", "CategoriesActive", "CategoriesCreate", "TasksFocus", "TasksActive", "TaskCreateName", "TaskCreateExp", "MilestonesFocus", "MilestonesActive", "MilestoneCreateName", "MilestoneCreateExp", "TimersFocus", "TimersActive", "HelpPreview"],
 	"keybinds": {
 		"CategoriesFocus": {
 			"Enter": {"command": "State(CategoriesActive)", "info": "enter categories"},
 			"Right": {"command": "State(TasksFocus)", "info": "move focus to tasks"},
 			"Left": {"command": "State(TasksFocus)", "info": "move focus to tasks"},
+			"Up": {"command": "State(TimersFocus)", "info": "move focus to timers"},
+			"Down": {"command": "State(TimersFocus)", "info": "move focus to timers"},
 			"C(q)": {"command": "quit", "info": "quit application"},
 			"C(h)": {"command": "Set(last_state, CategoriesFocus);State(HelpPreview);Toggle(help)", "info": "open help view"}
 		},
@@ -40,7 +42,8 @@
 			"Up": {"command": "Change(category_id, -1)", "info": "move selection up"},
 			"C(q)": {"command": "State(CategoriesFocus)", "info": "exit active state"},
 			"C(n)": {"command": "OpenBuffer(category_name, text);Toggle(category_create);State(CategoriesCreate)", "info": "create new category"},
-			"C(h)": {"command": "Set(last_state, CategoriesActive);State(HelpPreview);Toggle(help)", "info": "open help view"}
+			"C(h)": {"command": "Set(last_state, CategoriesActive);State(HelpPreview);Toggle(help)", "info": "open help view"},
+			"C(t)": {"command": "Timer", "info": "Toggle timer"}
 		},
 		"CategoriesCreate": {
 			"Esc": {"command": "CloseBuffer;State(CategoriesActive);Toggle(category_create)", "info": "cancel category creation"},
@@ -53,7 +56,7 @@
 			"Right": {"command": "State(CategoriesFocus)", "info": "move focus to categories"},
 			"Left": {"command": "State(CategoriesFocus)", "info": "move focus to categories"},
 			"Down": {"command": "State(MilestonesFocus)", "info": "move focus to milestones"},
-			"Up": {"command": "State(MilestonesFocus)", "info": "move focus to milestones"},
+			"Up": {"command": "State(TimersFocus)", "info": "move focus to timers"},
 			"C(q)": {"command": "quit", "info": "quit application"},
 			"C(h)": {"command": "Set(last_state, TasksFocus);State(HelpPreview);Toggle(help)", "info": "open help view"}
 		},
@@ -83,7 +86,7 @@
 			"Enter": {"command": "State(MilestonesActive)", "info": "enter milestones view"},
 			"Right": {"command": "State(CategoriesFocus)", "info": "move focus to categories"},
 			"Left": {"command": "State(CategoriesFocus)", "info": "move focus to categories"},
-			"Down": {"command": "State(TasksFocus)", "info": "move focus to tasks"},
+			"Down": {"command": "State(TimersFocus)", "info": "move focus to timers"},
 			"Up": {"command": "State(TasksFocus)", "info": "move focus to tasks"},
 			"C(q)": {"command": "quit", "info": "quit application"},
 			"C(h)": {"command": "Set(last_state, MilestonesFocus);State(HelpPreview);Toggle(help)", "info": "open help view"}
@@ -109,6 +112,18 @@
 			"Left": {"command": "SaveBuffer;State(MilestoneCreateName);OpenBuffer(milestone_name, text)", "info": "edit name"},
 			"Enter": {"command": "AddMilestone($milestone_name, $milestone_exp);Remove(milestone_name);Remove(milestone_exp);CloseBuffer;Toggle(milestone_create);State(MilestonesActive)", "info": "save milestone"},
 			"Esc": {"command": "Remove(milestone_name);Remove(milestone_exp);CloseBuffer;Toggle(milestone_create);State(MilestonesActive)", "info": "quit milestone creation"}		},
+		"TimersFocus": {
+			"Up": {"command": "State(CategoriesFocus)", "info": "move focus to categories"},
+			"Down": {"command": "State(CategoriesFocus)", "info": "move focus to categories"},
+			"Enter": {"command": "State(TimersActive)", "info": "enter timers view"},
+			"C(q)": {"command": "quit", "info": "quit application"},
+			"C(h)": {"command": "Set(last_state, TimersFocus);State(HelpPreview);Toggle(help)", "info": "open help view"}
+		},
+		"TimersActive": {
+			"C(q)": {"command": "State(TimersFocus)", "info": "exit active state"},
+			"C(h)": {"command": "Set(last_state, TimersActive);State(HelpPreview);Toggle(help)", "info": "open help view"},
+			"Enter": {"command": "Result(Timer preview not supported yet)", "info": "timer preview"}
+		},
 		"HelpPreview": {
 			"Esc": {"command": "State($last_state);Toggle(help)", "info": "close help and return"},
 			"C(q)": {"command": "State($last_state);Toggle(help)", "info": "close help and return"}
@@ -157,6 +172,16 @@
 			"styles": {
 				"MilestonesActive": "active",
 				"MilestonesFocus": "focus",
+				"_": "passive"
+			}
+		},
+		{
+			"widget_type": "Timers",
+			"layout": "main",
+			"constraint": 2,
+			"styles": {
+				"TimersActive": "active",
+				"TimersFocus": "focus",
 				"_": "passive"
 			}
 		},
@@ -237,6 +262,7 @@
 		"category_id": "0",
 		"task_id": "0",
 		"milestone_id": "0",
+		"timer_id": "0",
 		"last_state": "_"
 	}
 }

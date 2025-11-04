@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use ratatui::{layout::Rect, Frame};
 use serde::{Deserialize, Serialize};
 
-use crate::{json_types::{self, Category, Data, Milestone, Task}, layout_conf::{to_layouts, LayoutNode}, theme::{StyleData, Theme}, traits::tr_widget::TrWidget, ui::{render_error, render_result, widgets::{variant_id_to_usize, WidgetData}}, wild_type::{Generic, Variant}};
+use crate::{json_types::{self, Category, Data, Milestone, Task}, layout_conf::{to_layouts, LayoutNode}, theme::{StyleData, Theme}, timer::Timer, traits::tr_widget::TrWidget, ui::{render_error, render_result, widgets::{variant_id_to_usize, WidgetData}}, wild_type::{Generic, Variant}};
 
 pub enum AppCommands{
     Undefined,
@@ -25,6 +25,7 @@ pub enum AppCommands{
     AddMilestone(String, String),
     CompleteTask,
     CompleteMilestone,
+    Timer,
 }
 
 impl AppCommands{
@@ -93,6 +94,12 @@ impl AppCommands{
                     let value =  params.get(1).expect("").trim().to_string();
                     AppCommands::AddMilestone(name, value)
                 }
+                "timer" => AppCommands::Timer,
+                "quit" => AppCommands::Quit,
+                "closebuffer" => AppCommands::CloseBuffer,
+                "savebuffer" => AppCommands::SaveBuffer,
+                "completetask" => AppCommands::CompleteTask,
+                "completemilestone" => AppCommands::CompleteMilestone,
                 _ => AppCommands::Undefined,
             }
         }
@@ -100,6 +107,7 @@ impl AppCommands{
             let command: &str = &value.trim().to_lowercase();
             
             return match command{
+                "timer" => AppCommands::Timer,
                 "quit" => AppCommands::Quit,
                 "closebuffer" => AppCommands::CloseBuffer,
                 "savebuffer" => AppCommands::SaveBuffer,
@@ -137,8 +145,14 @@ pub struct AppConfig{
 
     #[serde(default = "default_exp_power")]
     pub exp_power: f32,
+    #[serde(default = "default_base_exp")]
+    pub base_exp: u32,
+    #[serde(default = "default_timer_frequency")]
+    pub timer_frequency: f32,
 }
 pub fn default_exp_power() -> f32{0.85}
+pub fn default_base_exp() -> u32{15}
+pub fn default_timer_frequency() -> f32{15.0}
 
 impl AppConfig{
     pub fn new() -> Self{
@@ -150,6 +164,8 @@ impl AppConfig{
             styles: HashMap::new(),
             values: HashMap::new(),
             exp_power: 0.85,
+            base_exp: 15,
+            timer_frequency: 15.0,
         }
     }
 }
@@ -179,13 +195,10 @@ pub struct App{
 
     pub data: json_types::Data,
     pub app_config: AppConfig,
-    //pub timers: Vec<Timer>,
+    pub timers: Vec<Timer>,
     
     pub theme: Theme,
     
-    pub global_lvl: u32,
-    pub global_exp: u32,
-
     pub input_mode: InputMode,
     pub buffer_name: Option<String>,
     pub input_buffer: String,
@@ -203,9 +216,8 @@ impl App{
             state: String::new(),
             data: Data::new(),
             app_config: AppConfig::new(),
+            timers: Vec::new(),
             theme: Theme::dark_theme(),
-            global_lvl: 0,
-            global_exp: 0,
             input_mode: InputMode::Undefined,
             buffer_name: None,
             input_buffer: String::new(),
@@ -278,6 +290,9 @@ impl App{
             AppCommands::CompleteMilestone => {
                 self.complete_milestone();
             }
+            AppCommands::Timer => {
+                self.toggle_timer();
+            }
             _ => {}
         }
     }
@@ -285,6 +300,16 @@ impl App{
     pub fn load_config(&mut self, config: AppConfig){
         self.app_config = config;
         self.state = self.app_config.states.first().expect("No states provided").to_string();
+    }
+
+    pub fn handle_timers(&mut self){
+        for timer in self.timers.iter_mut(){
+            if timer.is_finished(){
+                if let Some(category) = self.data.get_category_uid_mut(timer.category_id){
+                    category.increase_exp(1, self.app_config.exp_power, self.app_config.base_exp);
+                }
+            }
+        }
     }
 
     pub fn render_widgets(&mut self, frame: &mut Frame){
@@ -345,7 +370,7 @@ impl App{
                         return;
                     }
                 }
-                let _ = self.data.add_category(Category::init(&self.input_buffer));
+                let _ = self.data.add_category(Category::init(&self.input_buffer, self.app_config.base_exp));
                 self.result_message = "Category succesfully added".to_string();
             }
             else if let Some(Variant::Str(value)) = self.additional_data.get(&name){
@@ -355,7 +380,7 @@ impl App{
                         return;
                     }
                 }
-                let _ = self.data.add_category(Category::init(value));
+                let _ = self.data.add_category(Category::init(value, self.app_config.base_exp));
                 self.result_message = "Category succesfully added".to_string();
             }
             else{
@@ -473,11 +498,12 @@ impl App{
 
     pub fn complete_task(&mut self){
         if let Some(task_id) = self.additional_data.get("task_id") && let Some(category_id) = self.additional_data.get("category_id"){
-            if let Variant::Int(task_id) = task_id && let Some(category_id) = variant_id_to_usize(category_id, self.data.categories.len()){ 
+            if let Some(category_id) = variant_id_to_usize(category_id, self.data.categories.len()){ 
                 if let Some(category) = self.data.get_category_mut(category_id){
-                    if let Some(task) = category.get_task(*task_id as usize){
-                        category.increase_exp(task.exp_reward, self.app_config.exp_power);
-                        self.set_data("task_id".to_string(), Variant::Int(0));
+                    if let Some(task_id) = variant_id_to_usize(task_id, category.tasks.len()){
+                        if let Some(task) = category.get_task(task_id){
+                            category.increase_exp(task.exp_reward, self.app_config.exp_power, self.app_config.base_exp);
+                        }
                     }
                 }
             }
@@ -486,13 +512,34 @@ impl App{
 
     pub fn complete_milestone(&mut self){
         if let Some(milestone_id) = self.additional_data.get("milestone_id") && let Some(category_id) = self.additional_data.get("category_id"){
-            if let Variant::Int(milestone_id) = milestone_id && let Some(category_id) = variant_id_to_usize(category_id, self.data.categories.len()){ 
+            if let Some(category_id) = variant_id_to_usize(category_id, self.data.categories.len()){ 
                 if let Some(category) = self.data.get_category_mut(category_id){
-                    if let Some(milestone) = category.get_milestone(*milestone_id as usize){
-                        category.increase_exp(milestone.exp_reward, self.app_config.exp_power);
-                        let _ = category.remove_milestone(*milestone_id as usize);
-                        self.set_data("milestone_id".to_string(), Variant::Int(0));
+                    if let Some(milestone_id) = variant_id_to_usize(milestone_id, category.tasks.len()){
+                        if let Some(milestone) = category.get_milestone(milestone_id){
+                            category.increase_exp(milestone.exp_reward, self.app_config.exp_power, self.app_config.base_exp);
+                            let _ = category.remove_milestone(milestone_id);
+                            self.set_data("milestone_id".to_string(), Variant::Int(0));
+                        }
                     }
+                }
+            }
+        }
+    }
+
+    pub fn toggle_timer(&mut self){
+        if let Some(category_id) = self.additional_data.get("category_id"){
+            if let Some(category_id) = variant_id_to_usize(category_id, self.data.categories.len()){
+                if let Some(category) = self.data.get_category(category_id){
+                    let category_uid = category.get_uid();
+
+                    for (i, timer) in self.timers.iter().enumerate(){
+                        if timer.category_id == category_uid{
+                            self.timers.remove(i);
+                            return;
+                        }
+                    }
+
+                    self.timers.push(Timer::new(category, self.app_config.timer_frequency));
                 }
             }
         }

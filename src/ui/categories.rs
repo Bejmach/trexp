@@ -34,9 +34,10 @@ impl TrWidget for CategoriesWidget{
             let mut items: Vec<ListItem> = Vec::new();
             let size: u16 = area.width - 6;
             for (i, category) in app.data.categories.iter().enumerate(){
+
                 let label_left = format!("{}", category.name);
-                let label_right = format!("{}/{} : {}", category.exp, category.exp_to_next_lvl, category.lvl);
-                let ratio = category.exp as f32 / category.exp_to_next_lvl as f32;
+                let label_right = format!("{}/{} : {}", category.exp, category.next_exp, category.lvl);
+                let ratio = category.exp as f32 / category.next_exp as f32;
 
                 let state = if focus{
                     if i == id{
@@ -51,7 +52,7 @@ impl TrWidget for CategoriesWidget{
                     GaugeState::FadedPassive
                 };
 
-                items.push(ListItem::new(build_gauge(app, label_left, label_right, ratio, size, state)));
+                items.push(ListItem::new(build_gauge(app, label_left, label_right, ratio as f32, size, state)));
             }
             let category_list = List::new(items);
 

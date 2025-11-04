@@ -143,8 +143,8 @@ impl GaugeStyle {
             empty_char: ' ',
             border_char: '|',
 
-            margin_left: 15,
-            margin_right: 20,
+            margin_left: 3,
+            margin_right: 4,
 
             focus: Style::default()
                 .fg(Color::Rgb(220, 165, 90))

@@ -2,8 +2,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
-pub fn exp_for_lvl(lvl: u32, power: f32) -> u32{
-    (20.0 * (lvl as f32).powf(power)) as u32
+pub fn calculate_exp(lvl: u32, power: f32, base: u32) -> u32{
+    (base as f32 * (lvl as f32).powf(power)) as u32
 }
 
 #[derive(Serialize, Deserialize)]
@@ -58,14 +58,31 @@ impl Data{
     pub fn get_category(&self, id: usize) -> Option<&Category>{
         self.categories.get(id)
     }
+    pub fn get_category_uid_mut(&mut self, uid: u64) -> Option<&mut Category>{
+        for category in self.categories.iter_mut(){
+            if category.get_uid() == uid{
+                return Some(category);
+            }
+        }
+        None
+    }
+    pub fn get_category_uid(&mut self, uid: u64) -> Option<&Category>{
+        for category in self.categories.iter(){
+            if category.get_uid() == uid{
+                return Some(category);
+            }
+        }
+        None
+    }
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct Category{
     unique_id: u64,
     pub name: String,
+    pub exp_sum: u64,
     pub exp: u32,
-    pub exp_to_next_lvl: u32,
+    pub next_exp: u32,
     pub lvl: u32,
     pub tasks: Vec<Task>,
     pub milestones: Vec<Milestone>,
@@ -81,14 +98,15 @@ impl Category{
         Self {
             unique_id: timestamp,
             name: String::new(),
+            exp_sum: 0,
             exp: 0,
-            exp_to_next_lvl: 20,
+            next_exp: 0,
             lvl: 1,
             tasks: Vec::new(),
             milestones: Vec::new(),
         }
     }
-    pub fn init(name: &str) -> Self{
+    pub fn init(name: &str, base: u32) -> Self{
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH).expect("");
 
@@ -97,8 +115,9 @@ impl Category{
         Self {
             unique_id: timestamp,
             name: name.to_string(),
+            exp_sum: 0,
             exp: 0,
-            exp_to_next_lvl: 20,
+            next_exp: base,
             lvl: 1,
             tasks: Vec::new(),
             milestones: Vec::new(),
@@ -166,17 +185,17 @@ impl Category{
         self.milestones.get(id)
     }
 
-    pub fn increase_exp(&mut self, exp: u32, power: f32){
+    pub fn increase_exp(&mut self, exp: u32, power: f32, base: u32){
+        self.exp_sum += exp as u64;
         self.exp += exp;
-        while self.exp >= self.exp_to_next_lvl{
-            self.lvl_up(power);
-        }
+        self.lvl_up(power, base);
     }
-
-    pub fn lvl_up(&mut self, power: f32){
-        self.exp -= self.exp_to_next_lvl;
-        self.lvl += 1;
-        self.exp_to_next_lvl = exp_for_lvl(self.lvl, power);
+    pub fn lvl_up(&mut self, power: f32, base: u32){
+        if self.exp > self.next_exp{
+            self.exp = self.exp - self.next_exp;
+            self.lvl += 1;
+            self.next_exp = calculate_exp(self.lvl, power, base)
+        }
     }
 }
 

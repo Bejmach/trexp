@@ -15,6 +15,7 @@ use ratatui::{prelude::Backend, Terminal};
 use crate::{app::App, events::handle_events, json_types::Category, ui::ui};
 
 fn main() -> Result<(), Box<dyn Error>> {
+
     let mut file = File::open("config.json")?;
     let mut data = String::new();
 
@@ -37,6 +38,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<(), 
 
     while !app.exit{
         terminal.draw(|f| ui(f, app))?;
+
+        app.handle_timers();
 
         let timeout: Duration = tick_rate
             .checked_sub(last_tick.elapsed())
