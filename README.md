@@ -69,5 +69,6 @@ Configuration using json file is greatly improved from base app version, but sti
 
 ## Additional info
 Inspiration is from that video: "https://youtu.be/WJqu8fTd5Kk"
+Also, fuck off creeper. No one wants you here
 
 > Thank you and have fun!
