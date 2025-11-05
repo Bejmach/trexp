@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fs::File, io::{self, Read, Write}, path::PathBuf};
 
 use ratatui::{layout::Rect, Frame};
 use serde::{Deserialize, Serialize};
@@ -26,6 +26,7 @@ pub enum AppCommands{
     CompleteTask,
     CompleteMilestone,
     Timer,
+    Save,
 }
 
 impl AppCommands{
@@ -100,6 +101,7 @@ impl AppCommands{
                 "savebuffer" => AppCommands::SaveBuffer,
                 "completetask" => AppCommands::CompleteTask,
                 "completemilestone" => AppCommands::CompleteMilestone,
+                "save" => AppCommands::Save,
                 _ => AppCommands::Undefined,
             }
         }
@@ -113,6 +115,7 @@ impl AppCommands{
                 "savebuffer" => AppCommands::SaveBuffer,
                 "completetask" => AppCommands::CompleteTask,
                 "completemilestone" => AppCommands::CompleteMilestone,
+                "save" => AppCommands::Save,
                 _ => AppCommands::Undefined,
             }
         }
@@ -206,7 +209,9 @@ pub struct App{
     pub result_message: String,
     pub error_message: String,
 
-    pub additional_data: HashMap<String, Variant>
+    pub additional_data: HashMap<String, Variant>,
+
+    pub config_path: PathBuf,
 }
 
 impl App{
@@ -223,13 +228,16 @@ impl App{
             input_buffer: String::new(),
             result_message: String::new(),
             error_message: String::new(),
-            additional_data: HashMap::new()
+            additional_data: HashMap::new(),
+            config_path: PathBuf::new(),
         }
     }
-    pub fn init(&mut self){
+    pub fn init(&mut self, config_path: PathBuf){
         for (key, value) in self.app_config.values.clone().into_iter(){
             self.additional_data.insert(key, Variant::from_string(&value, &Generic::Any));
         }
+        self.config_path = config_path;
+        let _ = self.load_data();
     }
 
     pub fn run_command_string(&mut self, commands: String){
@@ -293,6 +301,9 @@ impl App{
             AppCommands::Timer => {
                 self.toggle_timer();
             }
+            AppCommands::Save => {
+                let _ = self.save_data();
+            }
             _ => {}
         }
     }
@@ -300,6 +311,25 @@ impl App{
     pub fn load_config(&mut self, config: AppConfig){
         self.app_config = config;
         self.state = self.app_config.states.first().expect("No states provided").to_string();
+    }
+
+    pub fn load_data(&mut self) -> io::Result<()>{
+        let mut file = File::open(self.config_path.join("data.json").to_str().expect("no config path provided").to_string())?;
+    
+        let mut content = String::new();
+        file.read_to_string(&mut content)?;
+
+        self.data = serde_json::from_str(&content)?;
+
+        Ok(())
+    }
+    pub fn save_data(&self) -> io::Result<()>{
+        let data: String = serde_json::to_string(&self.data)?;
+
+        let mut file = File::create(self.config_path.join("data.json").to_str().expect("no config path provided").to_string())?;
+        file.write_all(data.as_bytes())?;
+
+        Ok(())
     }
 
     pub fn handle_timers(&mut self){

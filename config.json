@@ -32,8 +32,9 @@
 			"Left": {"command": "State(TasksFocus)", "info": "move focus to tasks"},
 			"Up": {"command": "State(TimersFocus)", "info": "move focus to timers"},
 			"Down": {"command": "State(TimersFocus)", "info": "move focus to timers"},
-			"C(q)": {"command": "quit", "info": "quit application"},
-			"C(h)": {"command": "Set(last_state, CategoriesFocus);State(HelpPreview);Toggle(help)", "info": "open help view"}
+			"C(q)": {"command": "save;quit", "info": "quit application"},
+			"C(h)": {"command": "Set(last_state, CategoriesFocus);State(HelpPreview);Toggle(help)", "info": "open help view"},
+			"C(s)": {"command": "Save;Result(data saved)", "info": "save data"}
 		},
 		"CategoriesActive": {
 			"Esc": {"command": "State(CategoriesFocus)", "info": "return to categories focus"},
@@ -43,7 +44,8 @@
 			"C(q)": {"command": "State(CategoriesFocus)", "info": "exit active state"},
 			"C(n)": {"command": "OpenBuffer(category_name, text);Toggle(category_create);State(CategoriesCreate)", "info": "create new category"},
 			"C(h)": {"command": "Set(last_state, CategoriesActive);State(HelpPreview);Toggle(help)", "info": "open help view"},
-			"C(t)": {"command": "Timer", "info": "Toggle timer"}
+			"C(t)": {"command": "Timer", "info": "Toggle timer"},
+			"C(s)": {"command": "Save;Result(data saved)", "info": "save data"}
 		},
 		"CategoriesCreate": {
 			"Esc": {"command": "CloseBuffer;State(CategoriesActive);Toggle(category_create)", "info": "cancel category creation"},
@@ -57,8 +59,9 @@
 			"Left": {"command": "State(CategoriesFocus)", "info": "move focus to categories"},
 			"Down": {"command": "State(MilestonesFocus)", "info": "move focus to milestones"},
 			"Up": {"command": "State(TimersFocus)", "info": "move focus to timers"},
-			"C(q)": {"command": "quit", "info": "quit application"},
-			"C(h)": {"command": "Set(last_state, TasksFocus);State(HelpPreview);Toggle(help)", "info": "open help view"}
+			"C(q)": {"command": "save;quit", "info": "quit application"},
+			"C(h)": {"command": "Set(last_state, TasksFocus);State(HelpPreview);Toggle(help)", "info": "open help view"},
+			"C(s)": {"command": "Save;Result(data saved)", "info": "save data"}
 		},
 		"TasksActive": {
 			"Esc": {"command": "State(TasksFocus)", "info": "return to tasks focus"},
@@ -68,7 +71,8 @@
 			"C(q)": {"command": "State(TasksFocus)", "info": "exit active state"},
 			"C(n)": {"command": "Toggle(task_create);State(TaskCreateName);OpenBuffer(task_name, text)", "info": "create new task"},
 			"C(h)": {"command": "Set(last_state, TasksActive);State(HelpPreview);Toggle(help)", "info": "open help view"},
-			"C(f)": {"command": "CompleteTask", "info": "complete task"}
+			"C(f)": {"command": "CompleteTask", "info": "complete task"},
+			"C(s)": {"command": "Save;Result(data saved)", "info": "save data"}
 		},
 		"TaskCreateName": {
 			"Right": {"command": "SaveBuffer;State(TaskCreateExp);OpenBuffer(task_exp, number)", "info": "edit exp"},
@@ -88,8 +92,9 @@
 			"Left": {"command": "State(CategoriesFocus)", "info": "move focus to categories"},
 			"Down": {"command": "State(TimersFocus)", "info": "move focus to timers"},
 			"Up": {"command": "State(TasksFocus)", "info": "move focus to tasks"},
-			"C(q)": {"command": "quit", "info": "quit application"},
-			"C(h)": {"command": "Set(last_state, MilestonesFocus);State(HelpPreview);Toggle(help)", "info": "open help view"}
+			"C(q)": {"command": "save;quit", "info": "quit application"},
+			"C(h)": {"command": "Set(last_state, MilestonesFocus);State(HelpPreview);Toggle(help)", "info": "open help view"},
+			"C(s)": {"command": "Save;Result(data saved)", "info": "save data"}
 		},
 		"MilestonesActive": {
 			"Esc": {"command": "State(MilestonesFocus)", "info": "return to milestones focus"},
@@ -99,7 +104,8 @@
 			"C(q)": {"command": "State(MilestonesFocus)", "info": "exit active state"},
 			"C(n)": {"command": "Toggle(milestone_create);State(MilestoneCreateName);OpenBuffer(milestone_name, text)", "info": "create new milestone"},
 			"C(h)": {"command": "Set(last_state, MilestonesActive);State(HelpPreview);Toggle(help)", "info": "open help view"},
-			"C(f)": {"command": "CompleteMilestone", "info": "complete milestone"}
+			"C(f)": {"command": "CompleteMilestone", "info": "complete milestone"},
+			"C(s)": {"command": "Save;Result(data saved)", "info": "save data"}
 		},
 		"MilestoneCreateName": {
 			"Right": {"command": "SaveBuffer;State(MilestoneCreateExp);OpenBuffer(milestone_exp, number)", "info": "edit exp"},
@@ -116,13 +122,15 @@
 			"Up": {"command": "State(CategoriesFocus)", "info": "move focus to categories"},
 			"Down": {"command": "State(CategoriesFocus)", "info": "move focus to categories"},
 			"Enter": {"command": "State(TimersActive)", "info": "enter timers view"},
-			"C(q)": {"command": "quit", "info": "quit application"},
-			"C(h)": {"command": "Set(last_state, TimersFocus);State(HelpPreview);Toggle(help)", "info": "open help view"}
+			"C(q)": {"command": "save;quit", "info": "quit application"},
+			"C(h)": {"command": "Set(last_state, TimersFocus);State(HelpPreview);Toggle(help)", "info": "open help view"},
+			"C(s)": {"command": "Save;Result(data saved)", "info": "save data"}
 		},
 		"TimersActive": {
 			"C(q)": {"command": "State(TimersFocus)", "info": "exit active state"},
 			"C(h)": {"command": "Set(last_state, TimersActive);State(HelpPreview);Toggle(help)", "info": "open help view"},
-			"Enter": {"command": "Result(Timer preview not supported yet)", "info": "timer preview"}
+			"Enter": {"command": "Result(Timer preview not supported yet)", "info": "timer preview"},
+			"C(s)": {"command": "Save;Result(data saved)", "info": "save data"}
 		},
 		"HelpPreview": {
 			"Esc": {"command": "State($last_state);Toggle(help)", "info": "close help and return"},

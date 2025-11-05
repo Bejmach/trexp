@@ -8,28 +8,39 @@ mod json_types;
 mod theme;
 mod wild_type;
 
-use std::{error::Error, fs::File, io::{self, Read}, time::{Duration, Instant}};
+use std::{error::Error, fs::File, io::{self, Read}, path::PathBuf, time::{Duration, Instant}};
 
+use dirs_next::config_dir;
 use ratatui::{prelude::Backend, Terminal};
 
 use crate::{app::App, events::handle_events, json_types::Category, ui::ui};
 
+fn get_config_dir(app_name: &str) -> Option<PathBuf> {
+    dirs_next::config_dir().map(|base| base.join(app_name))
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
+    if let Some(config_path) = get_config_dir("trexp"){
+        println!("{}", config_path.to_str().expect("").to_string());
+        let mut file = File::open(config_path.join("config.json").to_str().expect("no config path provided").to_string())?;
+        let mut data = String::new();
 
-    let mut file = File::open("config.json")?;
-    let mut data = String::new();
+        file.read_to_string(&mut data)?;
 
-    file.read_to_string(&mut data)?;
+        let mut terminal = ratatui::init();
+        let mut app = App::new();
 
-    let mut terminal = ratatui::init();
-    let mut app = App::new();
+        app.load_config(serde_json::from_str(&data).expect("couldnt parse data"));
+        app.init(config_path);
 
-    app.load_config(serde_json::from_str(&data).expect("couldnt parse data"));
-    app.init();
+        run_app(&mut terminal, &mut app)?;
 
-    run_app(&mut terminal, &mut app)?;
-
-    Ok(())
+        Ok(())
+    }
+    else{
+        println!("Couldn't find config path");
+        Ok(())
+    }
 }
 
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<(), io::Error>{

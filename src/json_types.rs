@@ -191,7 +191,7 @@ impl Category{
         self.lvl_up(power, base);
     }
     pub fn lvl_up(&mut self, power: f32, base: u32){
-        if self.exp > self.next_exp{
+        if self.exp >= self.next_exp{
             self.exp = self.exp - self.next_exp;
             self.lvl += 1;
             self.next_exp = calculate_exp(self.lvl, power, base)
