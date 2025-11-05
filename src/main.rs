@@ -21,7 +21,6 @@ fn get_config_dir(app_name: &str) -> Option<PathBuf> {
 
 fn main() -> Result<(), Box<dyn Error>> {
     if let Some(config_path) = get_config_dir("trexp"){
-        println!("{}", config_path.to_str().expect("").to_string());
         let mut file = File::open(config_path.join("config.json").to_str().expect("no config path provided").to_string())?;
         let mut data = String::new();
 

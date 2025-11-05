@@ -11,7 +11,7 @@ impl HelpWidget{
 }
 
 impl TrWidget for HelpWidget{
-    fn render(&self, frame: &mut Frame, app: &App, layout_data: &HashMap<String, Vec<Rect>>, data: &WidgetData) {
+    fn render(&mut self, frame: &mut Frame, app: &App, layout_data: &HashMap<String, Vec<Rect>>, data: &WidgetData) {
         let area = match data.constraint_fit{
                 ConstraintFit::Default => layout_data.get(&data.layout).expect("no layout with provided id").get(data.constraint).expect("no constraint with provided id"),
                 ConstraintFit::Centered { percent_x, percent_y } => &centered_rect(percent_x, percent_y, *layout_data.get(&data.layout).expect("no layout with provided id").get(data.constraint).expect("no constraint with provided id"))

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use ratatui::{layout::Rect, style::Stylize, symbols::border, text::{Line, Span}, widgets::{Block, List, ListItem, Padding}};
+use ratatui::{layout::Rect, style::Stylize, symbols::border, text::{Line, Span}, widgets::{Block, Clear, List, ListItem, Padding}};
 
 use crate::{theme::StyleData, traits::tr_widget::TrWidget, ui::{centered_rect, widgets::{variant_id_to_usize, ConstraintFit, WidgetData}}};
 
@@ -11,7 +11,7 @@ impl TaskWidget{
 }
 
 impl TrWidget for TaskWidget{
-    fn render(&self, frame: &mut ratatui::Frame, app: &crate::app::App, layout_data: &HashMap<String, Vec<Rect>>, widget: &WidgetData) {
+    fn render(&mut self, frame: &mut ratatui::Frame, app: &crate::app::App, layout_data: &HashMap<String, Vec<Rect>>, widget: &WidgetData) {
         let mut items: Vec<ListItem> = Vec::new();
 
         let area = match widget.constraint_fit{
@@ -72,6 +72,7 @@ impl TrWidget for TaskWidget{
             .padding(Padding::new(2, 4, 1, 1))
             .style(style_data.to_style());
 
+        frame.render_widget(Clear, *area);
         frame.render_widget(task_list.block(block), *area);
     }
 }

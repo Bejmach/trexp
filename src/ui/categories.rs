@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use ratatui::{layout::Rect, style::Stylize, symbols::border, text::Line, widgets::{Block, List, ListItem, Padding}};
+use ratatui::{layout::Rect, style::Stylize, symbols::border, text::Line, widgets::{Block, Clear, List, ListItem, Padding}};
 
 use crate::{theme::{GaugeState, StyleData}, traits::tr_widget::TrWidget, ui::{centered_rect, gauge::build_gauge, widgets::{variant_id_to_usize, ConstraintFit, WidgetData}}};
 
@@ -11,7 +11,7 @@ impl CategoriesWidget{
 }
 
 impl TrWidget for CategoriesWidget{
-    fn render(&self, frame: &mut ratatui::Frame, app: &crate::app::App, layout_data: &HashMap<String, Vec<Rect>>, widget: &WidgetData) {
+    fn render(&mut self, frame: &mut ratatui::Frame, app: &crate::app::App, layout_data: &HashMap<String, Vec<Rect>>, widget: &WidgetData) {
         
         let category_id = app.additional_data.get("category_id").expect("");
         let category_id = variant_id_to_usize(category_id, app.data.categories.len());
@@ -64,6 +64,7 @@ impl TrWidget for CategoriesWidget{
                 .padding(Padding::new(2, 4, 1, 1))
                 .style(style);
 
+            frame.render_widget(Clear, *area);
             frame.render_widget(category_list.block(block), *area);
         }
     }

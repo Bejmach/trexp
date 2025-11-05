@@ -349,7 +349,7 @@ impl App{
             if !widget.visible{
                 continue;
             }
-            if let Some(widget_box) = widget.widget_type.to_widget(){
+            if let Some(mut widget_box) = widget.widget_type.to_widget(){
                 widget_box.render(frame, self, &layout_data, &widget);
             }
         }
