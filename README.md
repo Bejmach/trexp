@@ -53,9 +53,8 @@ Configuration using json file is greatly improved from base app version, but sti
 - [x] Category widget
 - [x] Task widget
 - [x] Milestone widget
-- [ ] Timers widget
+- [x] Timers widget
 - [x] Help widget
-- [ ] Image widget
 - [ ] User profile widget
 - [ ] Category preview
 - [ ] Task preview
@@ -63,9 +62,15 @@ Configuration using json file is greatly improved from base app version, but sti
 - [ ] Category edit
 - [ ] Task edit
 - [ ] Milestone edit
-- [ ] Timer start
-- [ ] Increase exp
-- [ ] Save/Load data
+- [x] Timer start
+- [x] Increase exp
+- [x] Save/Load data
+- [ ] better styling
+- [ ] change widget titles
+
+## Abandoned
+
+- Image widget
 
 ## Additional info
 Inspiration is from that video: "https://youtu.be/WJqu8fTd5Kk"
