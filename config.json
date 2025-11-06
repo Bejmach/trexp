@@ -3,7 +3,7 @@
 		{
 			"id": "main",
 			"direction": "Vertical",
-			"constraints": ["l.3", "p.70", "p.30"]
+			"constraints": ["l.6", "p.70", "p.30"]
 		},
 		{
 			"id": "widgets",
@@ -152,6 +152,14 @@
 		}
 	},
 	"widgets": [
+		{
+			"widget_type": {"User": {"name": "Bejmach"}},
+			"layout": "main",
+			"constraint": 0,
+			"styles": {
+				"_": "passive"
+			}
+		},
 		{
 			"widget_type": "Categories",
 			"layout": "widgets",
